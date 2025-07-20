@@ -1,1 +1,19 @@
 
+{
+  "name": "avy",
+  "version": "1.0.0",
+  "description": "avy discord bot",
+  "main": "server.js",
+  "scripts": {
+    "start": "node ./src/server.js"
+  },
+  "dependencies": {
+    "node-fetch": "3.3.2",
+    "dotenv": "^16.1.4",
+    "express": "^5.0.1"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "license": "MIT"
+}
