@@ -2,12 +2,13 @@
 {
   "name": "avy",
   "version": "1.0.0",
-  "description": "avy discord bot",
+  "description": "happy program",
   "main": "server.js",
   "scripts": {
     "start": "node ./src/server.js"
   },
   "dependencies": {
+    "discord.js": "14.21.0",
     "node-fetch": "3.3.2",
     "dotenv": "^16.1.4",
     "express": "^5.0.1"

@@ -28,3 +28,6 @@ app.listen(PORT, () => {
 
 const { startCycler } = require('./heartSystem/heart.js');
 startCycler();
+
+const { loginAvy } = require('./discordBot/avyMain.js');
+loginAvy();
