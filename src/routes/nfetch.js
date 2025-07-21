@@ -1,10 +1,10 @@
 const envDecrypt = require('../envDecrypt.js');
-const clusterAcolyteToken = process.env.clusterAcolyteToken
+const clusterAcolyteToken = process.env.avyClusterAcolyteToken
 
 module.exports = async (req, res) => { // node fetch gateway
   try {
     const authHeader = req.headers.authorization;
-    if (!authHeader || envDecrypt(process.env.publicClusterKey, authHeader) !== clusterAcolyteToken) {
+    if (!authHeader || envDecrypt(process.env.avyPublicClusterKey, authHeader) !== clusterAcolyteToken) {
       return res.sendStatus(401);
     }
     

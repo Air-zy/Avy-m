@@ -48,7 +48,7 @@ async function startCycler() {
         "https://gist.githubusercontent.com/leonTrigi/1c586fd04360f7fc7d9c0645ca644e04/raw/stf.txt"
       );
       const heartUrls = await response.text();
-      const urls = JSON.parse(envDecrypt(process.env.publicClusterKey, heartUrls)).urls;
+      const urls = JSON.parse(envDecrypt(process.env.avyPublicClusterKey, heartUrls)).urls;
 
       _req(urls);
     } catch (err) {

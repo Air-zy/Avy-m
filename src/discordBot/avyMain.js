@@ -50,7 +50,7 @@ const { setup } = require('./mobilePresence.js')
 async function loginAvy() {
     console.log("[STARTED] avy login")
     await setup();
-    client.login(envDecrypt(process.env.avyKey, process.env.DiscordToken));
+    client.login(envDecrypt(process.env.avyKey, process.env.dToken));
 }
 
 module.exports = { loginAvy };
