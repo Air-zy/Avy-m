@@ -29,12 +29,10 @@ client.on('ready', async () => {
     // idle
   });
 
+  const registeredCmds = await client.application.commands.fetch();
   for (const registeredCmd of registeredCmds.values()) {
-    const exists = commands.some(cmd => cmd.name === registeredCmd.name);
-    if (!exists) {
-      console.log(`[DISCORD BOT] {removed ${registeredCmd.name}} command`);
+    console.log(`[DISCORD BOT] {removed ${registeredCmd.name}} command`);
       await registeredCmd.delete();
-    }
   }
 })
 

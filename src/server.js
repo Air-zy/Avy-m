@@ -22,7 +22,7 @@ app.get('/api/logs', require('./routes/api_logs.js') );
 app.post('/nfetch',  require('./routes/nfetch.js')   );
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`avy server running on port ${PORT}`);
 });
 
 
