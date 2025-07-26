@@ -1,7 +1,7 @@
 
 {
-  "name": "avy",
-  "version": "1.0.0",
+  "name": "azy",
+  "version": "1.0.1",
   "description": "happy program",
   "main": "server.js",
   "scripts": {
