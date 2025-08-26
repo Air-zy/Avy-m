@@ -1,5 +1,6 @@
 const envDecrypt = require('../envDecrypt.js');
-const { Client, GatewayIntentBits, Partials } = require('discord.js');
+const discordjs = require("discord.js");
+const { Client, GatewayIntentBits, Partials, PermissionsBitField } = discordjs;
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -21,9 +22,9 @@ client.on('ready', async () => {
     activities: [{ 
       name: "under maintenance", // The name of the activity
       type: 4, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      state: "🔧 under maintenance",
+      state: "reconstruction",
     }],
-    status: 'dnd'
+    status: 'online'
     // online
     // dnd
     // idle
@@ -43,6 +44,15 @@ client.on('error', error => {
 client.on('warn', info => {
     console.log('[DISCORD BOT] api warn:', info);
 });
+
+const onMsgCreate = require('./onMsgCreate.js')
+client.on("messageCreate", (message) => onMsgCreate(client, message));
+
+const chatbot_mod = require("./chatbot_module.js");
+chatbot_mod.pass_exports(client, PermissionsBitField);
+
+const cmd_funcs = require("./msg_cmds.js");
+cmd_funcs.pass_exports(client, discordjs, PermissionsBitField)
 
 const { setup } = require('./mobilePresence.js')
 async function loginAvy() {
