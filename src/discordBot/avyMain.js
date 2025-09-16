@@ -1,3 +1,4 @@
+const fs = require('fs');
 const envDecrypt = require('../envDecrypt.js');
 const discordjs = require("discord.js");
 const { Client, GatewayIntentBits, Partials, PermissionsBitField } = discordjs;
