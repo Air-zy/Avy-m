@@ -31,9 +31,19 @@ client.on('ready', async () => {
   });
 
   const registeredCmds = await client.application.commands.fetch();
+  const commands = JSON.parse(fs.readFileSync('src/discordBot/json_storage/discord_commands.json'));
+
+  for (const cmd of commands) {
+    const exists = registeredCmds.some(registeredCmd => registeredCmd.name === cmd.name);
+    if (!exists) {
+      console.log(`[DISCORD BOT] {registered ${cmd.name}} command`);
+      await client.application.commands.create(cmd);
+    }
+  }
+  
   for (const registeredCmd of registeredCmds.values()) {
     console.log(`[DISCORD BOT] {removed ${registeredCmd.name}} command`);
-      await registeredCmd.delete();
+    await registeredCmd.delete();
   }
 })
 
