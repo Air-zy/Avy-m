@@ -41,7 +41,7 @@ async function isTalkingToBot(client, msg) {
 const fs = require('fs');
 
 const cmdprefix = JSON.parse(fs.readFileSync('src/discordBot/json_storage/configs.json'))[0].prefix;
-const chatbot_mod = require("./chatbot_module.js");
+const chatbot_mod = require("./chat_bot/chatbot_module.js");
 const cmd_funcs = require("./msg_cmds.js");
 
 const userTimeouts = new Map();

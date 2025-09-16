@@ -1,9 +1,9 @@
 module.exports = async (interaction) => {
-    const reply = await interaction.reply({ content: '*gets pinged*', fetchReply: true });
+    await interaction.reply({ content: '*gets pinged*' });
     const botLatency = Date.now() - interaction.createdTimestamp;
     const apiLatency = interaction.client.ws.ping;
     await interaction.editReply(
-      `owies! dont ping me ever again!\n` +
+      `baka!\n` +
       `bot-server-host: ${botLatency}ms\n` +
       `discord-api: ${apiLatency}ms`
     );

@@ -65,18 +65,8 @@ client.on('ready', async () => {
 })
 
 client.on('interactionCreate', async (interaction) => {
-  console.log("interaction:", interaction);
-
-  require("./commandName.js")
-  if (interaction.commandName == 'ping') {
-    await interaction.reply('Pong! 🏓');
-  }
-});
-
-client.on('interactionCreate', async (interaction) => {
   if (!interaction.isCommand()) return;
   const commandName = interaction.commandName;
-
   try {
     const command = require(`./interactions/${commandName}.js`);
     if (command && typeof command === 'function') {
@@ -90,7 +80,7 @@ client.on('interactionCreate', async (interaction) => {
   } catch (err) {
     console.warn(`Command handler for "${commandName}" not found.`);
     await interaction.reply({
-      content: 'cmd does not exist',
+      content: "```js\nCMD err: " + err + '```',
       ephemeral: true
     });
   }
@@ -107,7 +97,7 @@ client.on('warn', info => {
 const onMsgCreate = require('./onMsgCreate.js')
 client.on("messageCreate", (message) => onMsgCreate(client, message));
 
-const chatbot_mod = require("./chatbot_module.js");
+const chatbot_mod = require("./chat_bot/chatbot_module.js");
 chatbot_mod.pass_exports(client, PermissionsBitField);
 
 const cmd_funcs = require("./msg_cmds.js");

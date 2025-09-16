@@ -1,8 +1,22 @@
 [
   {
     "name": "ping",
-    "description": "Check if the bot is alive",
+    "description": "displays latency",
     "integration_types": [0, 1],
     "contexts": [0, 1, 2]
+  },
+  {
+    "name": "ask",
+    "description": "will respond",
+    "integration_types": [0, 1],
+    "contexts": [0, 1, 2],
+    "options": [
+      {
+        "name": "question",
+        "description": "The question you want to ask",
+        "type": 3,
+        "required": true
+      }
+    ]
   }
 ]

@@ -2,7 +2,7 @@
 const { encode: encodeGPT4 } = require('gpt-tokenizer/model/gpt-4o'); // Import the encoder function
 const { encode: encodeGPT35  } = require('gpt-tokenizer/model/gpt-3.5-turbo'); // Import the encoder function
 
-const envDecrypt = require('../envDecrypt.js');
+const envDecrypt = require('../../envDecrypt.js');
 const apiKey = envDecrypt(process.env.avyKey, process.env.oaiKey);
 const fs = require('fs');
 
