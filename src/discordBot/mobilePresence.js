@@ -1,8 +1,9 @@
 const fs = require('fs')
 
 async function setup() {
+    const filePath = 'node_modules/@discordjs/ws/dist/index.js'
     fs.readFile(
-        '../../node_modules/@discordjs/ws/dist/index.js',
+        filePath,
         'utf8',
     (err, data) => {
         if (err) {

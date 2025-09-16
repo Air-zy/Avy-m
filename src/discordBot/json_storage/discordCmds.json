@@ -1,79 +1,8 @@
 [
   {
-    "name": "send",
-    "description": "send text",
-    "default_member_permissions": 0,
-    "options": [
-      {
-        "name": "text",
-        "description": "what to say",
-        "type": 3,
-        "required": true
-      },
-      {
-        "name": "channel_id",
-        "description": "channel/user to send to",
-        "type": 3,
-        "required": false
-      }
-    ],
+    "name": "ping",
+    "description": "Check if the bot is alive",
     "integration_types": [0, 1],
     "contexts": [0, 1, 2]
-  },
-  {
-    "name": "draw",
-    "description": "generates art",
-    "options": [
-      {
-        "name": "prompt",
-        "description": "what to draw",
-        "type": 3,
-        "required": true
-      },
-      {
-        "name": "upscale",
-        "description": "il take my time <3",
-        "type": 5,
-        "required": false
-      }
-    ],
-    "integration_types": [0, 1],
-    "contexts": [0, 1, 2]
-  },
-  {
-    "name": "tts",
-    "description": "text to speech in vc",
-    "options": [
-      {
-        "name": "text",
-        "description": "text to say",
-        "type": 3,
-        "required": true
-      }
-    ]
-  },
-  {
-    "name": "tiktok",
-    "description": "posts a tiktok",
-    "options": [
-      {
-        "name": "search",
-        "description": "what to search",
-        "type": 3,
-        "required": true
-      }
-    ]
-  },
-  {
-    "name": "urltomp4",
-    "description": "convert url to mp4",
-    "options": [
-      {
-        "name": "url",
-        "description": "url",
-        "type": 3,
-        "required": true
-      }
-    ]
   }
 ]

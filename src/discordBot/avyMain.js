@@ -1,7 +1,14 @@
 const fs = require('fs');
 const envDecrypt = require('../envDecrypt.js');
 const discordjs = require("discord.js");
-const { Client, GatewayIntentBits, Partials, PermissionsBitField } = discordjs;
+const {
+  Client,
+  GatewayIntentBits,
+  Partials,
+  PermissionsBitField,
+  REST,
+  Routes
+} = discordjs;
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -32,7 +39,7 @@ client.on('ready', async () => {
   });
 
   const registeredCmds = await client.application.commands.fetch();
-  const commands = JSON.parse(fs.readFileSync('src/discordBot/json_storage/discord_commands.json'));
+  const commands = JSON.parse(fs.readFileSync('src/discordBot/json_storage/discordCmds.json'));
 
   for (const cmd of commands) {
     const exists = registeredCmds.some(registeredCmd => registeredCmd.name === cmd.name);
@@ -46,7 +53,48 @@ client.on('ready', async () => {
     console.log(`[DISCORD BOT] {removed ${registeredCmd.name}} command`);
     await registeredCmd.delete();
   }
+
+  const rest = new REST({ version: '10' }).setToken(
+    envDecrypt(process.env.avyKey, process.env.dToken)
+  );
+  console.log('[DISCORD BOT] syncing global commands...');
+  await rest.put(
+    Routes.applicationCommands(client.user.id),
+    { body: commands }
+  );
 })
+
+client.on('interactionCreate', async (interaction) => {
+  console.log("interaction:", interaction);
+
+  require("./commandName.js")
+  if (interaction.commandName == 'ping') {
+    await interaction.reply('Pong! 🏓');
+  }
+});
+
+client.on('interactionCreate', async (interaction) => {
+  if (!interaction.isCommand()) return;
+  const commandName = interaction.commandName;
+
+  try {
+    const command = require(`./interactions/${commandName}.js`);
+    if (command && typeof command === 'function') {
+      await command(interaction);
+    } else {
+      await interaction.reply({
+        content: 'cmd exists but (air) is stupid and format it wrong. dm him',
+        ephemeral: true
+      });
+    }
+  } catch (err) {
+    console.warn(`Command handler for "${commandName}" not found.`);
+    await interaction.reply({
+      content: 'cmd does not exist',
+      ephemeral: true
+    });
+  }
+});
 
 client.on('error', error => {
     console.log('[DISCORD BOT] api error:', error);
