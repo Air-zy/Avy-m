@@ -46,5 +46,19 @@
         "required": true
       }
     ]
+  },
+  {
+    "name": "tomp4",
+    "description": "downloads a url as mp4",
+    "integration_types": [0, 1],
+    "contexts": [0, 1, 2],
+    "options": [
+      {
+        "name": "url",
+        "description": "link",
+        "type": 3,
+        "required": true
+      }
+    ]
   }
 ]
