@@ -4,9 +4,6 @@ let client;
 let Permissions;
 
 const fs = require('fs');
-
-// value
-
 const configData = JSON.parse(fs.readFileSync('src/discordBot/json_storage/configs.json'));
 const imgnamewatermark = configData[0].img_name_stamp
 const animodule = require("../anigen.js");

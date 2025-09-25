@@ -18,5 +18,33 @@
         "required": true
       }
     ]
+  },
+  {
+    "name": "tiktok",
+    "description": "searches a tiktok",
+    "integration_types": [0, 1],
+    "contexts": [0, 1, 2],
+    "options": [
+      {
+        "name": "search",
+        "description": "what to search",
+        "type": 3,
+        "required": true
+      }
+    ]
+  },
+  {
+    "name": "draw",
+    "description": "generate ai img",
+    "integration_types": [0, 1],
+    "contexts": [0, 1, 2],
+    "options": [
+      {
+        "name": "prompt",
+        "description": "what to draw",
+        "type": 3,
+        "required": true
+      }
+    ]
   }
 ]

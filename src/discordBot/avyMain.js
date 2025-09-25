@@ -70,19 +70,29 @@ client.on('interactionCreate', async (interaction) => {
   try {
     const command = require(`./interactions/${commandName}.js`);
     if (command && typeof command === 'function') {
-      await command(interaction);
+      await command(interaction, client);
     } else {
       await interaction.reply({
         content: 'cmd exists but (air) is stupid and format it wrong. dm him',
         ephemeral: true
       });
     }
-  } catch (err) {
-    console.warn(`Command handler for "${commandName}" not found.`);
-    await interaction.reply({
-      content: "```js\nCMD err: " + err + '```',
-      ephemeral: true
-    });
+  } catch (error) {
+    console.warn(`Command handler for "${commandName}" not found.`, error);
+
+    try {
+      if (error && error.stack && error.message){
+        if (interaction.deferred || interaction.replied) {
+          await interaction.editReply("```js\nCMD err: " + err + '```');
+        } else {
+          await interaction.reply("```js\nCMD err: " + err + '```');
+        }
+      } else {
+        await interaction.reply("```js\nCMD err: " + err + '```')
+      }
+    } catch (err2) {
+      console.log('\n[DISCORD INTER ERROR] ', error)
+    }
   }
 });
 
