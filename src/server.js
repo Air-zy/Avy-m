@@ -25,6 +25,7 @@ app.listen(PORT, () => {
   console.log(`avy server running on port ${PORT}`);
 });
 
+console.log("node version:",process.version);
 
 const { startCycler } = require('./heartSystem/heart.js');
 startCycler();

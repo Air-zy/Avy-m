@@ -1,23 +1,21 @@
-
 {
   "name": "azy",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "happy program",
   "main": "server.js",
   "scripts": {
     "start": "node ./src/server.js"
   },
   "dependencies": {
+    "btch-downloader": "^5.0.4",
     "discord.js": "14.21.0",
-    "node-fetch": "3.3.2",
     "dotenv": "^16.1.4",
     "express": "^5.0.1",
     "gpt-tokenizer": "^2.2.1",
-    "btch-downloader": "2.8.3",
-    "undici": "5.27.2"
+    "node-fetch": "3.3.2"
   },
   "engines": {
-    "node": "18.x"
+    "node": "22.x"
   },
   "license": "MIT"
 }
