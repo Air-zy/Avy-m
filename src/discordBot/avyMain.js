@@ -1,5 +1,9 @@
 const fs = require('fs');
 const envDecrypt = require('../envDecrypt.js');
+
+const { setupMobileP } = require('./mobilePresence.js')
+await setupMobileP();
+
 const discordjs = require("discord.js");
 const {
   Client,
@@ -27,12 +31,12 @@ client.on('ready', async () => {
   console.log(`[SUCCESS login] ${client.user.tag}!`);
 
   await client.user.setPresence({ 
-    /*activities: [{ 
-      name: "under maintenance", // The name of the activity
+    activities: [{ 
+      name: "hi", // The name of the activity
       type: 1, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      state: "reconstruction",
-    }],*/
-    status: 'online'
+      state: "hi",
+    }],
+    //status: 'online'
     // online
     // dnd
     // idle
@@ -98,10 +102,8 @@ chatbot_mod.pass_exports(client, PermissionsBitField);
 const cmd_funcs = require("./msg_cmds.js");
 cmd_funcs.pass_exports(client, discordjs, PermissionsBitField)
 
-const { setup } = require('./mobilePresence.js')
 async function loginAvy() {
     console.log("[STARTED] avy login")
-    await setup();
     client.login(envDecrypt(process.env.avyKey, process.env.dToken));
 }
 
