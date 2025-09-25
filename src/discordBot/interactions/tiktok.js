@@ -12,17 +12,20 @@ module.exports = async (interaction, client) => {
 
       let maNames = [];
       
-      let prevmessages = await channel.messages.fetch({ limit: 100 });
-      prevmessages.forEach((msg) => {
-        if (msg.author.id == client.user.id) {
-          if (msg.attachments.size > 0) {
-            msg.attachments.forEach((mattach) => {
-              let maName =  mattach.name.split('.')[0]
-              maNames.push(maName);
-            })
-          }
-        }
-      })
+      try {
+        let prevmessages = await channel.messages.fetch({ limit: 100 });
+        prevmessages.forEach((msg) => {
+            if (msg.author.id == client.user.id) {
+            if (msg.attachments.size > 0) {
+                msg.attachments.forEach((mattach) => {
+                let maName =  mattach.name.split('.')[0]
+                maNames.push(maName);
+                })
+            }
+            }
+        })
+      } catch {
+      }
       
       let contentmsg = "downloading...";
       
