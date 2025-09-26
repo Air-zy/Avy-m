@@ -23,14 +23,31 @@ const client = new Client({
     ]
 });
 
+/*
+{ 
+  activities: [{ 
+    name: "hi", // The name of the activity
+    type: 0, // 0playing 1streaming 2listening 3watching 4custom 5competing
+    state: "hi",
+  }],
+  //status: 'online'
+  // online
+  // dnd
+  // idle
+}
+*/
+async function setPresence(dsPresence) {
+  await client.user.setPresence(dsPresence);
+}
+
 client.on('ready', async () => {
   console.log(`[SUCCESS login] ${client.user.tag}!`);
 
-  await client.user.setPresence({ 
+  await setPresence({ 
     activities: [{ 
-      name: "hi", // The name of the activity
-      type: 0, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      //state: "hi",
+      name: "test", // The name of the activity
+      type: 4, // 0playing 1streaming 2listening 3watching 4custom 5competing
+      state: "test",
     }],
     //status: 'online'
     // online

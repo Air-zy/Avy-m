@@ -89,18 +89,22 @@ async function handle_cmds(message) {
       }
     }
     //
-  } else if (message.content == cmdprefix + "ping") {
+  } else if (message.content == cmdprefix + "ping" || message.content == cmdprefix + "info") {
     const start = Date.now();
     const rmsg = await mchannel.send({
       content: "A",
     });
     const latency = Date.now() - start;
     const wsPing = client.ws.ping;
+    const os = require("os");
     const newEmbed = new discordjs.EmbedBuilder()
       .setColor("#DC143C")
       .addFields(
         { name: "websocket", value: toText(wsPing), inline: true },
-        { name: "latency", value: toText(latency), inline: true }
+        { name: "latency", value: toText(latency), inline: true },
+        { name: "uptime", value: `${(process.uptime() / 60).toFixed(2)} minutes`, inline: true },
+        { name: "heap", value: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`, inline: true },
+        { name: "locals", value: `${Object.values(os.networkInterfaces()).flat().filter(i => i.family === "IPv4").map(i => i.address).join(", ")}`, inline: false }
       );
     rmsg.edit({
       content: "",
