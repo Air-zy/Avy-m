@@ -1,34 +1,22 @@
 const fs = require('fs')
-async function setupMobileP() {
+async function setup() {
     const filePath = 'node_modules/@discordjs/ws/dist/index.js'
-    fs.readFile(
-        filePath,
-        'utf8',
-    (err, data) => {
-        if (err) {
-            console.log('[Mobile Presence ERROR] reading file:', err);
-            return;
-        }
-
-        // check if the browser is already set to "Discord iOS"
+    
+    try {
+        let data = await fs.readFile(filePath, 'utf8');
         if (data.includes('browser: "Discord iOS",')) {
             console.log('[Mobile Presence] File already modified. No action needed.');
             return;
         }
-
         const modifiedData = data.replace(
             'browser: DefaultDeviceProperty,',
             'browser: "Discord iOS",'
         );
-
-        fs.writeFile(filePath, modifiedData, 'utf8', (err) => {
-            if (err) {
-                console.error('[Mobile Presence ERROR] writing file:', err);
-                return;
-            }
-            console.log('[Mobile Presence] File modified successfully.');
-        });
-    });
+        await fs.writeFile(filePath, modifiedData, 'utf8');
+        console.log('[Mobile Presence] File modified successfully.');
+    } catch (err) {
+        console.error('[Mobile Presence ERROR]', err);
+    }
 };
 
-module.exports = setupMobileP;
+module.exports = { setup };

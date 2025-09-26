@@ -29,8 +29,8 @@ client.on('ready', async () => {
   await client.user.setPresence({ 
     activities: [{ 
       name: "hi", // The name of the activity
-      type: 1, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      state: "hi",
+      type: 0, // 0playing 1streaming 2listening 3watching 4custom 5competing
+      //state: "hi",
     }],
     //status: 'online'
     // online
