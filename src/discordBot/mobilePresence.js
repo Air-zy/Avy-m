@@ -1,4 +1,4 @@
-const fs = require('fs')
+const fs = require('fs').promises
 async function setup() {
     const filePath = 'node_modules/@discordjs/ws/dist/index.js'
     
