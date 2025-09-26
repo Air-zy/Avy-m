@@ -1,4 +1,4 @@
-const downloadAny = require("../");
+const downloadAny = require("../modules/downloadAny.js");
 module.exports = async (interaction, client) => {
     const url = interaction.options.getString('url');
     if (url == null) { return; }
