@@ -1,9 +1,5 @@
 const fs = require('fs');
 const envDecrypt = require('../envDecrypt.js');
-
-const { setupMobileP } = require('./mobilePresence.js')
-await setupMobileP();
-
 const discordjs = require("discord.js");
 const {
   Client,

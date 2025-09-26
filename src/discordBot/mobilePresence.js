@@ -1,5 +1,4 @@
 const fs = require('fs')
-
 async function setupMobileP() {
     const filePath = 'node_modules/@discordjs/ws/dist/index.js'
     fs.readFile(
@@ -32,4 +31,4 @@ async function setupMobileP() {
     });
 };
 
-module.exports = { setupMobileP };
+module.exports = setupMobileP;

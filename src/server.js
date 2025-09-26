@@ -30,5 +30,9 @@ console.log("node version:",process.version);
 const { startCycler } = require('./heartSystem/heart.js');
 startCycler();
 
-const { loginAvy } = require('./discordBot/avyMain.js');
-loginAvy();
+(async () => {
+  await require('./discordBot/mobilePresence.js')
+
+  const { loginAvy } = require('./discordBot/avyMain.js');
+  loginAvy();
+})();
