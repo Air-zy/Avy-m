@@ -60,5 +60,19 @@
         "required": true
       }
     ]
+  },
+  {
+    "name": "sysPrompt",
+    "description": "set your own system prompt",
+    "integration_types": [0, 1],
+    "contexts": [0, 1, 2],
+    "options": [
+      {
+        "name": "prompt",
+        "description": "sys(personality) propt",
+        "type": 3,
+        "required": true
+      }
+    ]
   }
 ]

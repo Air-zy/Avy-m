@@ -73,7 +73,7 @@ async function generate(input, upscale = false, opts = {}) {
   const resolution = getRandomResolution(resolutionOptions);
 
   // Map upscale to more steps / guidance — tweak as you prefer
-  const steps = upscale ? 40 : 25;
+  const steps = upscale ? 8 : 2;
   const guidance = upscale ? 20 : 7;
 
   // allow override via opts
