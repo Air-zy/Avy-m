@@ -74,7 +74,7 @@ async function generate(input, upscale = false, opts = {}) {
 
   // Map upscale to more steps / guidance — tweak as you prefer
   const steps = upscale ? 8 : 2;
-  const guidance = upscale ? 20 : 7;
+  const guidance = 1;
 
   // allow override via opts
   const model = opts.model || "Default";
