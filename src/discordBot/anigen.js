@@ -73,7 +73,7 @@ async function generate(input, upscale = false, opts = {}) {
   const resolution = getRandomResolution(resolutionOptions);
 
   // Map upscale to more steps / guidance — tweak as you prefer
-  const steps = upscale ? 8 : 2;
+  const steps = upscale ? 16 : 8;
   const guidance = 1;
 
   // allow override via opts
@@ -83,7 +83,7 @@ async function generate(input, upscale = false, opts = {}) {
 
   const body = {
     input: input,
-    negative_input: opts.negative_input || "bad quality, worst quality, drawing, old, ugly",
+    negative_input: null,//opts.negative_input || "bad quality, worst quality, drawing, old, ugly",
     target_image: target_image,
     model: model,
     use_json: !!opts.use_json,
