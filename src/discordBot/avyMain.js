@@ -133,7 +133,11 @@ client.on('presenceUpdate', async (oldPresence, newPresence) => {
             status: normal_status,
           }),
         });
-        console.log('Response from /presence:', response.data);
+        if (!response.ok) {
+          console.log(response)
+          throw Error("presence response not ok")
+        }
+        console.log('Response from /presence:', response.data, normal_status);
       } catch (error) {
         console.warn('Error sending request:', error.message);
       }
@@ -154,6 +158,10 @@ setInterval( async () => {
             status: currentStatus,
           }),
       });
+      if (!response.ok) {
+          console.log(response)
+          throw Error("presence response not ok")
+      }
     } catch (error) {
       console.error('Error during the periodic online send:', error);
     }
