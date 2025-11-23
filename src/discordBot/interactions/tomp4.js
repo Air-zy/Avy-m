@@ -1,3 +1,35 @@
+function toText(value) {
+  function circularReplacer() {
+    const seen = new WeakSet();
+    return (key, value) => {
+      if (typeof value === 'object' && value !== null) {
+        if (seen.has(value)) {
+          return undefined; // Ignore circular references
+        }
+        seen.add(value);
+      }
+      return value;
+    };
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  } else if (typeof value === 'number' || typeof value === 'boolean' || value instanceof Date) {
+    return value.toString();
+  } else if (Array.isArray(value)) {
+    return value.join(', ');
+  } else if (typeof value === 'object' && value !== null) {
+    if (Buffer.isBuffer(value)) {
+      const bufferString = value.toString("utf8");
+      return bufferString;
+    } else {
+      return JSON.stringify(value, circularReplacer(), 2);
+    }
+  } else {
+    return String(value);
+  }
+}
+
 const downloadAny = require("../modules/downloadAny.js");
 module.exports = async (interaction, client) => {
     const url = interaction.options.getString('url');

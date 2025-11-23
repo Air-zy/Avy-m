@@ -1,10 +1,46 @@
 const { igdl, ttdl, fbdown, twitter, youtube } = require('btch-downloader');
 
+
+async function getInstagramReelVideoUrl(reelPageUrl) {
+  if (!reelPageUrl || typeof reelPageUrl !== 'string') throw new TypeError('reelPageUrl must be a string');
+  const apiKey = process.env.rapidApiKey;
+  if (!apiKey) throw new Error('Missing RapidAPI key in process.env.rapidApiKey');
+
+  const m = reelPageUrl.match(/\/reel\/([^\/?#]+)/i);
+  if (!m) throw new Error('Invalid reel URL — expected /reel/<shortcode>');
+  const shortcode = m[1];
+
+  const endpoint = 'https://social-media-video-downloader.p.rapidapi.com/instagram/v3/media/post/details';
+  const url = `${endpoint}?shortcode=${encodeURIComponent(shortcode)}&renderableFormats=720p,highres`;
+
+  const resp = await fetch(url, {
+    method: 'GET',
+    headers: {
+      'X-RapidAPI-Key': apiKey,
+      'X-RapidAPI-Host': 'social-media-video-downloader.p.rapidapi.com',
+      'Accept': 'application/json'
+    }
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '');
+    throw new Error(`API error ${resp.status}: ${t}`);
+  }
+
+  const body = await resp.json();
+  console.log(body.contents)
+  const videoUrl = body.contents?.[0]?.videos?.[0]?.url;
+
+  if (!videoUrl) throw new Error('Video URL not found in response.content[0].videos[0].url');
+
+  return videoUrl;
+}
+
 const download = async (url) => {
   try {
     if (url.startsWith('https://www.instagram') || url.startsWith('https://instagram')) {
-      const data = await igdl(url);
-      return data[0].url;
+      const data = await getInstagramReelVideoUrl(url);
+      return data;
     } else if (url.startsWith('https://www.tiktok') || url.startsWith('https://tiktok')) {
       const data = await ttdl(url);
       return data.video[0];
