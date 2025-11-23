@@ -107,13 +107,62 @@ client.on('warn', info => {
     console.log('[DISCORD BOT] api warn:', info);
 });
 
-client.on('presenceUpdate', (oldPresence, newPresence) => {
-    console.log("presence update RAH")
-    const user = newPresence.user;
-    const oldStatus = oldPresence.status;
-    const newStatus = newPresence.status;
-    console.log(`${user.tag} changed status from ${oldStatus} to ${newStatus}`);
+const envDecrypt = require('../envDecrypt.js');
+const presenceEndpoint = 'https://airzy.ca/presence'
+let currentStatus = "offline";
+let presUpdCD = 0;
+const airWebToken = envDecrypt(process.env.avyKey, process.env.airWebToken);
+const ownerId = envDecrypt(process.env.avyKey, process.env.ownerId)
+
+client.on('presenceUpdate', async (oldPresence, newPresence) => {
+  let member = newPresence.member;
+  let status = newPresence.clientStatus
+  let normal_status = newPresence.status
+  if (member.user.bot == false) {
+    const now = Date.now();
+    if (member.user.id == ownerId && now > presUpdCD + 1000) {
+      presUpdCD = now;
+      try {
+        currentStatus = normal_status;
+        const response = await fetch(presenceEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${airWebToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: normal_status,
+          }),
+        });
+        console.log('Response from /presence:', response.data);
+      } catch (error) {
+        console.warn('Error sending request:', error.message);
+      }
+    }
+  }
 });
+
+setInterval( async () => {
+  if (currentStatus === "online") {
+    try {
+      const response = await fetch(presenceEndpoint, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${airWebToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: normal_status,
+          }),
+      });
+    } catch (error) {
+      console.error('Error during the periodic online send:', error);
+    }
+  }
+}, 60000); // every minute
+
+//
+
 
 const onMsgCreate = require('./onMsgCreate.js')
 client.on("messageCreate", (message) => onMsgCreate(client, message));
