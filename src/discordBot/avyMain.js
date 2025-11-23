@@ -19,7 +19,8 @@ const client = new Client({
         GatewayIntentBits.GuildMembers,
     ],
     partials: [
-        Partials.Channel
+        Partials.Channel,
+        Partials.GuildMember
     ]
 });
 
@@ -104,6 +105,14 @@ client.on('error', error => {
 
 client.on('warn', info => {
     console.log('[DISCORD BOT] api warn:', info);
+});
+
+client.on('presenceUpdate', (oldPresence, newPresence) => {
+    console.log("presence update RAH")
+    const user = newPresence.user;
+    const oldStatus = oldPresence.status;
+    const newStatus = newPresence.status;
+    console.log(`${user.tag} changed status from ${oldStatus} to ${newStatus}`);
 });
 
 const onMsgCreate = require('./onMsgCreate.js')

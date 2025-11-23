@@ -62,7 +62,7 @@
     ]
   },
   {
-    "name": "sysPrompt",
+    "name": "sysprompt",
     "description": "set your own system prompt",
     "integration_types": [0, 1],
     "contexts": [0, 1, 2],
