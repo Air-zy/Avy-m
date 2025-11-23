@@ -107,7 +107,6 @@ client.on('warn', info => {
     console.log('[DISCORD BOT] api warn:', info);
 });
 
-const envDecrypt = require('../envDecrypt.js');
 const presenceEndpoint = 'https://airzy.ca/presence'
 let currentStatus = "offline";
 let presUpdCD = 0;
