@@ -151,7 +151,7 @@ setInterval( async () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            status: normal_status,
+            status: currentStatus,
           }),
       });
     } catch (error) {

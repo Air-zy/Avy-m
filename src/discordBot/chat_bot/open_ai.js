@@ -116,7 +116,7 @@ async function generate(msgs, aimodel) {
       
     "2771": 2, // (sure)
     "596": -14, // 's
-    "2846": -10, // 'm
+    "2846": -14, // 'm
     "19643": 5, // sure
     "9336": 5, // well
     "2079": -50, // request
