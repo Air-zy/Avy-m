@@ -20,12 +20,10 @@ let lastPlrCount = 0
 let lastRenameTime = 0;
 const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
-
-// TODO
 console.log("starting rowa tracker");
 setInterval( async () => {
   const totalPlrs = await getTotalPlayers()
-  if (totalPlrs != lastPlrCount && botIsLoggedOrReady == true && (Date.now() - lastRenameTime > COOLDOWN_MS) ) {
+  if (totalPlrs != lastPlrCount && (Date.now() - lastRenameTime > COOLDOWN_MS) ) {
     console.log("rowa plr count: ", totalPlrs)
     
     const found_channel = await client.channels.fetch("1359998910105522339");
