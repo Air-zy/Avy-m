@@ -46,7 +46,7 @@ const cmd_funcs = require("./msg_cmds.js");
 
 const userTimeouts = new Map();
 const delay = 1000;
-
+const { sendToRowa } = require("./rowa/sendMsgToRowa.js")
 module.exports = async (client, message) => {
   if (userTimeouts.has(message.author.id)) {
     return;
@@ -58,7 +58,9 @@ module.exports = async (client, message) => {
   }
 
   if (message.channel.id === "1404212337426042910") { // whooks channel
-    console.log("Someone spoke in the whooks channel:", msg.content);
+    const msgContent = message.content
+    const userName = message.author.username
+    sendToRowa(userName, msgContent);
   }
 
   const msg_channel = message.channel
