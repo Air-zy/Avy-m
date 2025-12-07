@@ -57,7 +57,7 @@ module.exports = async (client, message) => {
     console.log(`(${message.channel.id})(dm) ${message.author.username}: ${message.content}`); 
   }
 
-  if (message.channel.id === "1404212337426042910") { // whooks channel
+  if (message.channel.id === "1404212337426042910" && !message.webhookId) { // whooks channel
     const msgContent = message.content
     const userName = message.author.username
     sendToRowa(userName, msgContent);

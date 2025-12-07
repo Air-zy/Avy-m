@@ -10,6 +10,8 @@ async function sendToRowa(userName, msgContent) {
         return
     }
 
+    msgContent = msgContent.slice(0, 128);
+    
     const msg = userName + ": " + msgContent
     const topic = "dsMsg";
     const universeId = '8502229770';
