@@ -3,7 +3,7 @@ async function getTotalPlayers(placeId) {
   let nextPageCursor = null;
 
   do {
-    const url = `https://games.roblox.com/v1/games/137026189828839/servers/Public?sortOrder=Asc&limit=100${nextPageCursor ? `&cursor=${nextPageCursor}` : ''}`;
+    const url = `https://games.roblox.com/v1/games/128262404314907/servers/Public?sortOrder=Asc&limit=100${nextPageCursor ? `&cursor=${nextPageCursor}` : ''}`;
     const json = await fetch(url);
     if (json.data) {
       for (const server of json.data) {

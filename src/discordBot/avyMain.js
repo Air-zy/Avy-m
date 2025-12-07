@@ -180,6 +180,7 @@ chatbot_mod.pass_exports(client, PermissionsBitField);
 const cmd_funcs = require("./msg_cmds.js");
 cmd_funcs.pass_exports(client, discordjs, PermissionsBitField)
 
+const rowaTrack = require("./rowa/rowaTrack.js") // load ts
 async function loginAvy() {
     console.log("[STARTED] avy login")
     client.login(envDecrypt(process.env.avyKey, process.env.dToken));

@@ -57,6 +57,10 @@ module.exports = async (client, message) => {
     console.log(`(${message.channel.id})(dm) ${message.author.username}: ${message.content}`); 
   }
 
+  if (message.channel.id === "1404212337426042910") { // whooks channel
+    console.log("Someone spoke in the whooks channel:", msg.content);
+  }
+
   const msg_channel = message.channel
   if (message.content.startsWith(cmdprefix)) { // if command
     try {
