@@ -137,7 +137,7 @@ client.on('presenceUpdate', async (oldPresence, newPresence) => {
           console.log(response)
           throw Error("presence response not ok")
         }
-        console.log('Response from /presence:', response.data, normal_status);
+        //console.log('Response from /presence:', response.data, normal_status);
       } catch (error) {
         console.warn('Error sending request:', error.message);
       }
@@ -180,9 +180,10 @@ chatbot_mod.pass_exports(client, PermissionsBitField);
 const cmd_funcs = require("./msg_cmds.js");
 cmd_funcs.pass_exports(client, discordjs, PermissionsBitField)
 
-const rowaTrack = require("./rowa/rowaTrack.js") // load ts
+const { startRowaTracker } = require("./rowa/rowaTrack.js") // load ts
 async function loginAvy() {
     console.log("[STARTED] avy login")
+    startRowaTracker(client)
     client.login(envDecrypt(process.env.avyKey, process.env.dToken));
 }
 
