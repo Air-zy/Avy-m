@@ -5,8 +5,9 @@ async function getTotalPlayers(placeId) {
   do {
     const url = `https://games.roblox.com/v1/games/128262404314907/servers/Public?sortOrder=Asc&limit=100${nextPageCursor ? `&cursor=${nextPageCursor}` : ''}`;
     const json = await fetch(url);
-    if (json.data) {
-      for (const server of json.data) {
+    const body = await json.json();
+    if (body.data) {
+      for (const server of body.data) {
         totalPlayers += server.playing;
       }
       nextPageCursor = json.nextPageCursor
@@ -22,8 +23,10 @@ const COOLDOWN_MS = 5 * 60 * 1000; // 5 minutes
 
 async function startRowaTracker(client) {
   console.log("starting rowa tracker");
+
   setInterval( async () => {
     const totalPlrs = await getTotalPlayers()
+    console.log("rowa tracker:", totalPlrs)
     if (totalPlrs != lastPlrCount && (Date.now() - lastRenameTime > COOLDOWN_MS) ) {
       console.log("rowa plr count: ", totalPlrs)
       
