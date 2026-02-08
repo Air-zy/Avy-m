@@ -213,6 +213,8 @@ async function send_msg(history){
     }
      if (lowResp.includes("i cannot")
         || (lowResp.includes("sorry") && lowResp.includes("let's"))
+        || response.includes("Sorry,")
+        || response.includes("PG-13")
         || lowResp.includes("apologies, but")
         || (lowResp.includes("apologi") && lowResp.includes("assist"))
         || (lowResp.includes("can't") && lowResp.includes("assist"))

@@ -46,9 +46,9 @@ client.on('ready', async () => {
 
   await setPresence({ 
     activities: [{ 
-      name: "test", // The name of the activity
+      name: "avy", // The name of the activity
       type: 4, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      state: "test",
+      state: "avy",
     }],
     //status: 'online'
     // online
@@ -143,6 +143,19 @@ client.on('presenceUpdate', async (oldPresence, newPresence) => {
       }
     }
   }
+});
+
+const authorized_users = JSON.parse(
+  fs.readFileSync("src/discordBot/json_storage/configs.json")
+)[0].authorized_users;
+
+client.on('guildCreate', async (guild) => {
+    console.log(`[Discord Bot] added/joined to ${guild.name}`);
+    for (const userId of authorized_users) {
+      const recipient = await client.users.fetch(userId);
+      const found_channel = await recipient.createDM();
+      found_channel.send("[SYSTEM] avy added to guild: " + guild.id + "\n" + guild.name)
+    }
 });
 
 setInterval( async () => {
