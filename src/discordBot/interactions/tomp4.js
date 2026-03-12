@@ -37,7 +37,7 @@ module.exports = async (interaction, client) => {
   if (url == null) { return; }
   
   await interaction.reply({ content: "downloading..." });
-  const mp4videoUrl = await downloadAny(url);
+  const [mp4videoUrl, errMsg] = await downloadAny(url);
   if (mp4videoUrl) {
     await interaction.editReply({ content: "sending..." });
     const file = new AttachmentBuilder(mp4videoUrl, {
@@ -50,7 +50,7 @@ module.exports = async (interaction, client) => {
     });
   } else {
     await interaction.editReply({
-      content: "url not found sorry!" + toText(mp4videoUrl),
+      content: "url not found sorry!\n" + toText(errMsg),
     })
   }
 };
