@@ -51,7 +51,7 @@ const download = async (url) => {
     } else if (url.startsWith('https://twitter') || url.startsWith('https://x')) {
       const data = await twitter(url);
       return [data.url[1].sd, null];
-    } elseif (
+    } else if (
       url.startsWith('https://youtube') ||
       url.startsWith('https://www.youtube')
     ) {
