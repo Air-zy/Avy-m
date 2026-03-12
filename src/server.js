@@ -36,4 +36,7 @@ startCycler();
 
   const { loginAvy } = require('./discordBot/avyMain.js');
   loginAvy();
+
+  //const { initIG } = require('./instagramBot/init.js')
+  //initIG();
 })();

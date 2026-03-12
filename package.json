@@ -1,10 +1,10 @@
 {
   "name": "azy",
-  "version": "1.0.6",
+  "version": "1.0.8",
   "description": "happy program",
   "main": "server.js",
   "scripts": {
-    "start": "node ./src/server.js"
+    "start": "node --max-old-space-size=8192 ./src/server.js"
   },
   "dependencies": {
     "btch-downloader": "^5.0.4",

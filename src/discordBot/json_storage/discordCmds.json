@@ -20,8 +20,8 @@
     ]
   },
   {
-    "name": "tiktok",
-    "description": "searches a tiktok",
+    "name": "media",
+    "description": "searches for short form media",
     "integration_types": [0, 1],
     "contexts": [0, 1, 2],
     "options": [
@@ -56,20 +56,6 @@
       {
         "name": "url",
         "description": "link",
-        "type": 3,
-        "required": true
-      }
-    ]
-  },
-  {
-    "name": "sysprompt",
-    "description": "set your own system prompt",
-    "integration_types": [0, 1],
-    "contexts": [0, 1, 2],
-    "options": [
-      {
-        "name": "prompt",
-        "description": "sys(personality) propt",
         "type": 3,
         "required": true
       }

@@ -46,9 +46,9 @@ client.on('ready', async () => {
 
   await setPresence({ 
     activities: [{ 
-      name: "avy", // The name of the activity
+      name: "gooing", // The name of the activity
       type: 4, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      state: "avy",
+      state: "gooing",
     }],
     //status: 'online'
     // online
