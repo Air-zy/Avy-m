@@ -1,5 +1,4 @@
-// props to staticaliza <3
-const apiEndpoint = "https://api.staticaliza.com/v1/image-generation";
+const HF_API = require('./modules/HF_API.js');
 
 const resolutionOptions = [
   [1024, 1024],
@@ -14,31 +13,31 @@ const getRandomResolution = (options) => {
   return options[randomIndex];
 };
 
-function generateSimpleHash(length = 10) {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let hash = "";
-  for (let i = 0; i < length; i++) {
-    hash += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return hash;
-}
-
-const envDecrypt = require('../envDecrypt.js');
-const STATICALIZA_API_KEY = envDecrypt(process.env.avyKey, process.env.staticalKey);
 async function rawGen(body) {
-    const resp = await fetch(apiEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${STATICALIZA_API_KEY}`,
-      },
-      body: JSON.stringify(body),
-    });
+  //console.warn(body)
+  const resolution = getRandomResolution(resolutionOptions)
+  const input = {
+    input: body.input,
+    negative_input: body.negative_input,
+    reference_image: null,
+    resolution: resolution,
+    steps: body.steps,
+    guidance: body.guidance,
+    post_resolution: resolution,
+    crop: false,
+    remove_background: false,
+    safety_check: false,
+    safety_input: "Determine if this prompt contains violence.",
+    output_format: "Base64 PNG",
+    seed: body.seed
+  };
 
-    const response = await resp.json()
-    const imgb64 = response.data.output;
-    const buffer = Buffer.from(imgb64, "base64");
-    return { msg: buffer };
+  const json = JSON.stringify(input);
+  const result = await HF_API.drawClient.generate(json);
+  const resultData = result[0];
+  const imgb64 = resultData.output;
+  const buffer = Buffer.from(imgb64, "base64");
+  return { msg: buffer };
 }
 
 /**
@@ -50,15 +49,12 @@ async function rawGen(body) {
  *   input: "prompt string",
  *   negative_input: "negative prompt",
  *   target_image: null | "BASE64_IMAGE_STRING",
- *   model: "Default",
  *   use_json: false,
  *   resolution: [w,h],
  *   steps: 25,
  *   guidance: 7,
  *   post_resolution: [w,h],
  *   remove_background: false,
- *   lossy: true,
- *   progressive: false,
  *   seed: 12345
  * }
  */
@@ -76,8 +72,6 @@ async function generate(input, upscale = false, opts = {}) {
   const steps = upscale ? 16 : 8;
   const guidance = 1;
 
-  // allow override via opts
-  const model = opts.model || "Default";
   const target_image = opts.target_image || null; // if provided, must be base64 string
   const seed = (typeof opts.seed === "number") ? opts.seed : Math.floor(Math.random() * 2 ** 31);
 
@@ -85,20 +79,14 @@ async function generate(input, upscale = false, opts = {}) {
     input: input,
     negative_input: null,//opts.negative_input || "bad quality, worst quality, drawing, old, ugly",
     target_image: target_image,
-    model: model,
     use_json: !!opts.use_json,
     resolution: resolution,
     steps: steps,
     guidance: guidance,
     post_resolution: opts.post_resolution || resolution,
     remove_background: !!opts.remove_background,
-    lossy: ("lossy" in opts) ? !!opts.lossy : true,
-    progressive: !!opts.progressive,
     seed: seed,
   };
-
-  // optional request_id/session id for tracing
-  body.request_id = generateSimpleHash(12);
 
   return await rawGen(body);
 }
