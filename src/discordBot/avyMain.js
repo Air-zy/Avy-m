@@ -10,18 +10,18 @@ const {
   Routes
 } = discordjs;
 const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildPresences,
-        GatewayIntentBits.DirectMessages,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildMembers,
-    ],
-    partials: [
-        Partials.Channel,
-        Partials.GuildMember
-    ]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildPresences,
+    GatewayIntentBits.DirectMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+  ],
+  partials: [
+    Partials.Channel,
+    Partials.GuildMember
+  ]
 });
 
 /*
@@ -37,15 +37,12 @@ const client = new Client({
   // idle
 }
 */
-async function setPresence(dsPresence) {
-  await client.user.setPresence(dsPresence);
-}
 
 client.on('ready', async () => {
   console.log(`[SUCCESS login] ${client.user.tag}!`);
 
-  await setPresence({ 
-    activities: [{ 
+  await client.user.setPresence({
+    activities: [{
       name: "gooing", // The name of the activity
       type: 4, // 0playing 1streaming 2listening 3watching 4custom 5competing
       state: "gooing",
@@ -84,7 +81,7 @@ client.on('interactionCreate', async (interaction) => {
     console.warn(`Command handler for "${commandName}" not found.`, error);
 
     try {
-      if (error && error.stack && error.message){
+      if (error && error.stack && error.message) {
         if (interaction.deferred || interaction.replied) {
           await interaction.editReply("```js\nCMD err: " + err + '```');
         } else {
@@ -100,48 +97,21 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.on('error', error => {
-    console.log('[DISCORD BOT] api error:', error);
+  console.log('[DISCORD BOT] api error:', error);
 });
 
 client.on('warn', info => {
-    console.log('[DISCORD BOT] api warn:', info);
+  console.log('[DISCORD BOT] api warn:', info);
 });
 
-const presenceEndpoint = 'https://airzy.ca/presence'
-let currentStatus = "offline";
-let presUpdCD = 0;
-const airWebToken = envDecrypt(process.env.avyKey, process.env.airWebToken);
+const statusTracker = require('./modules/statusTracker.js')
 const ownerId = envDecrypt(process.env.avyKey, process.env.ownerId)
-
 client.on('presenceUpdate', async (oldPresence, newPresence) => {
   let member = newPresence.member;
-  let status = newPresence.clientStatus
+  //let status = newPresence.clientStatus
   let normal_status = newPresence.status
-  if (member.user.bot == false) {
-    const now = Date.now();
-    if (member.user.id == ownerId && now > presUpdCD + 1000) {
-      presUpdCD = now;
-      try {
-        currentStatus = normal_status;
-        const response = await fetch(presenceEndpoint, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${airWebToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: normal_status,
-          }),
-        });
-        if (!response.ok) {
-          console.log(response)
-          throw Error("presence response not ok")
-        }
-        //console.log('Response from /presence:', response.data, normal_status);
-      } catch (error) {
-        console.warn('Error sending request:', error.message);
-      }
-    }
+  if (member.user.bot == false && member.user.id == ownerId) {
+    statusTracker.statusUpd(normal_status)
   }
 });
 
@@ -150,36 +120,13 @@ const authorized_users = JSON.parse(
 )[0].authorized_users;
 
 client.on('guildCreate', async (guild) => {
-    console.log(`[Discord Bot] added/joined to ${guild.name}`);
-    for (const userId of authorized_users) {
-      const recipient = await client.users.fetch(userId);
-      const found_channel = await recipient.createDM();
-      found_channel.send("[SYSTEM] avy added to guild: " + guild.id + "\n" + guild.name)
-    }
-});
-
-setInterval( async () => {
-  if (currentStatus === "online") {
-    try {
-      const response = await fetch(presenceEndpoint, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${airWebToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            status: currentStatus,
-          }),
-      });
-      if (!response.ok) {
-          console.log(response)
-          throw Error("presence response not ok")
-      }
-    } catch (error) {
-      console.error('Error during the periodic online send:', error);
-    }
+  console.log(`[Discord Bot] added/joined to ${guild.name}`);
+  for (const userId of authorized_users) {
+    const recipient = await client.users.fetch(userId);
+    const found_channel = await recipient.createDM();
+    found_channel.send("[SYSTEM] avy added to guild: " + guild.id + "\n" + guild.name)
   }
-}, 60000); // every minute
+});
 
 //
 
@@ -193,11 +140,33 @@ chatbot_mod.pass_exports(client, PermissionsBitField);
 const cmd_funcs = require("./msg_cmds.js");
 cmd_funcs.pass_exports(client, discordjs, PermissionsBitField)
 
-const { startRowaTracker } = require("./rowa/rowaTrack.js") // load ts
+async function initStatusTracker() {
+  console.log("starting Status Tracker")
+  const rowaGuildID = '1359998909384228864';
+
+  const rowaGuild = await client.guilds.fetch(rowaGuildID).catch(() => null);
+  if (!rowaGuild) {
+    warn("could not find rowaGuild", rowaGuild)
+    return
+  }
+
+  const member = await rowaGuild.members.fetch(ownerId).catch(() => null);
+  const status = member?.presence?.status;
+
+  if (status) {
+    statusTracker.statusUpd(status);
+  }
+
+  statusTracker.initTracker();
+}
+
+const { startRowaTracker } = require("./rowa/rowaTrack.js"); // load ts
+const { warn } = require('console');
 async function loginAvy() {
-    console.log("[STARTED] avy login")
-    startRowaTracker(client)
-    client.login(envDecrypt(process.env.avyKey, process.env.dToken));
+  console.log("[STARTED] avy login")
+  startRowaTracker(client)
+  client.login(envDecrypt(process.env.avyKey, process.env.dToken));
+  initStatusTracker();
 }
 
 module.exports = { loginAvy };

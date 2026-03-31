@@ -1,6 +1,6 @@
 {
   "name": "azy",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "happy program",
   "main": "server.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "dotenv": "^16.1.4",
     "express": "^5.0.1",
     "gpt-tokenizer": "^2.2.1",
+    "firebase-admin": "^13.7.0",
     "node-fetch": "3.3.2"
   },
   "engines": {

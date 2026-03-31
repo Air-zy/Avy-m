@@ -31,7 +31,7 @@ const { startCycler } = require('./heartSystem/heart.js');
 startCycler();
 
 (async () => {
-  const { setup } =  require('./discordBot/mobilePresence.js')
+  const { setup } =  require('./discordBot/modules/mobilePresence.js')
   await setup();
 
   const { loginAvy } = require('./discordBot/avyMain.js');
