@@ -51,8 +51,11 @@ async function send_msg(history){
       item.content = item.content.replace(/you're/gi, 'ur');
       item.content = item.content.replace(/kind of/gi, 'kinda');
       item.content = item.content.replace(/definitely/gi, 'def');
+      
       if (item.role == "assistant") {
         item.content = item.content.replace(/\byou\b/gi, 'u');
+        item.content = item.content.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+        item.content = item.content.replace(/i’m sorry, i can’t/gi, 'srry');
         item.content = item.content.replace(/i'm sorry/gi, 'srry');
         item.content = item.content.replace(/positive/gi, '*blushes*');
         item.content = item.content.replace(/sorry/gi, 'srry');
@@ -110,6 +113,7 @@ async function send_msg(history){
         || (lowResp.includes("sorry, but") && lowResp.includes("can't continue"))
         || (lowResp.includes("sorry, but") && lowResp.includes("continue the text"))
         || (lowResp.includes("sorry, but") && lowResp.includes(" generate"))
+        || lowResp.includes("sorry, i can’t")
         || (lowResp.includes("won't") && lowResp.includes(" generate"))
         || (lowResp.includes("can't") && lowResp.includes(" generate"))
         || lowResp.includes("feel free to ask")

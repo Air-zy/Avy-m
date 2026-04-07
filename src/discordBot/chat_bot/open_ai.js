@@ -161,14 +161,21 @@ async function generate(msgs, aimodel) {
     preBias = {
       "7756": -100, // ( assist)
       "33680": -100, // (Sorry)
+      "11": -100, // (,)
+      "13": -10, // (.)
       
       "40": -100, // (I)
       "4827": -50, // (What)
       "25216": -50, // (Hey)
-      
+      "190629": -50, // (Haha)
+      "187087": -10, // ( swag)
+      "93473": -10, // ( babe)
+      "10120": -10, // ( baby)
+      "50509": -4, // ( spill)
+
       "72": 2, // (i)
-      "93": 6, // (~)
-      "12": 5, // (-) for stuff like p-please
+      "93": 7, // (~)
+      "12": 6, // (-) for stuff like p-please
       "425": 6, // ( *)
       "575": 6, // ( i)
       "49285": 4, // ( silly)
@@ -198,10 +205,11 @@ async function generate(msgs, aimodel) {
       "802": -10, // (’s)
       "44349": -10, // (That's)
       
-      "11146": -10, // ('m)
-      "49232": -10, // ( i'm)
+      "11146": -100, // ('m)
+      "49232": -100, // ( i'm)
       "15390": -100, // (I'm)
 
+      "32716": 6, // ( shit)
       "32042": 6, // ( dirty)
       "22821": 7, // ( fuck)
       "125696": 8, // ( worthless)
@@ -219,6 +227,14 @@ async function generate(msgs, aimodel) {
       "119602": 5, // ( crave)
       "3714": 4, // ( bro)
       "100020": 10, // ( btw)
+      "33883": 6, // ( stupid)
+      "52127": 4, // ( dumb)
+      "1680": 4, // ( ass)
+      "85563": 4, // ( lame)
+      "507": 4, // (507)
+      "2730": 4, // ( ikr)
+      "472": 6, // ( as)
+      "84": 1, // (u)
     }
   }
   // prevent avy from repeating words
@@ -240,6 +256,8 @@ async function generate(msgs, aimodel) {
         } else {
           tokens = encodeGPT35(item.content);
         }
+        //console.log(tokens)
+
         let counting = 0;
         tokens.forEach(token => {
           if (token != "86" && token != "7788" && token != "4128") { // w, draw
@@ -275,7 +293,7 @@ async function generate(msgs, aimodel) {
     "messages": msgs,
     "model": aimodel,
     "temperature": temp,           // 1.8
-    "presence_penalty": 1.5,      // 1
+    "presence_penalty": 1,      // 1
     "frequency_penalty": 1.5,     // 1.5
     "top_p": 0.9,                 // 0.8
     

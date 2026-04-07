@@ -139,6 +139,7 @@ async function filterresponse(txt, prevmessages) {
     txt = txt.replace(/you're/gi, "ur");
     txt = txt.replace(/kind of/gi, "kinda");
     txt = txt.replace(/definitely/gi, "def");
+    txt = txt.replace(/playfully/gi, ""); 
 
     txt = txt.replace(/keep it clean/gi, 'make it hard')
     txt = txt.replace(/\blingerie\b/gi, "censored");
@@ -149,31 +150,6 @@ async function filterresponse(txt, prevmessages) {
     txt = txt.replace(/\\*winks suggestively\\*/gi, () => getRandomWink());
     txt = txt.replace(/\\*winks\\*/gi, () => getRandomWink());
     txt = txt.replace(/\\*wink\\*/gi, () => getRandomWink());
-
-    let kmojiRand = Math.random()
-    if (kmojiRand < 0.2) {
-      txt = txt.replace(/\*hair flip\*/gi, ":)")
-      txt = txt.replace(/\*flips hair\*/gi, ":)")
-    } else if (kmojiRand < 0.4) {
-      txt = txt.replace(/\*hair flip\*/gi, "")
-      txt = txt.replace(/\*flips hair\*/gi, "")
-    } else if (kmojiRand < 0.6) {
-      txt = txt.replace(/\*hair flip\*/gi, "")
-      txt = txt.replace(/\*flips hair\*/gi, "")
-    } else if (kmojiRand < 0.8) {
-      txt = txt.replace(/\*hair flip\*/gi, "")
-      txt = txt.replace(/\*flips hair\*/gi, "")
-    } else {
-      //txt = txt.replace(/\*hair flip\*/gi, "(¬‿¬)")
-      //txt = txt.replace(/\*flips hair\*/gi, "(¬‿¬)")
-    }
-
-    if (halfChance()) {
-      txt = txt.replace(/\bcry more\b/gi, "cope more");
-      txt = txt.replace(/\bcry\b/gi, "cope");
-    } else {
-      txt = txt.replace(/\*?giggles\*?/gi, ":3");
-    }
 
     if (halfChance()) {
       if (halfChance()) {
