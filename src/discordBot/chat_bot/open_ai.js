@@ -156,7 +156,7 @@ async function generate(msgs, aimodel) {
   }
   
   let temp = 1.7
-  if (aimodel == "gpt-4o-mini-2024-07-18") {
+  if (aimodel == "gpt-4.1-nano") {
     temp = 1.9
     preBias = {
       "7756": -100, // ( assist)
@@ -235,7 +235,7 @@ async function generate(msgs, aimodel) {
         }
         
         let tokens;
-        if (aimodel == "gpt-4o-mini-2024-07-18") {
+        if (aimodel == "gpt-4.1-nano") {
           tokens = encodeGPT4(item.content);
         } else {
           tokens = encodeGPT35(item.content);

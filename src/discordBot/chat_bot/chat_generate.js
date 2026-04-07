@@ -96,7 +96,8 @@ async function send_msg(history){
   });
 
   try {
-    let response = await newGenerate(history, "gpt-3.5-turbo")
+    //let response = await newGenerate(history, "gpt-3.5-turbo")
+    let response = await newGenerate(history, "gpt-4.1-nano")
     let lowResp = response.toLowerCase();
     if (lowResp.includes("i cannot")
         || (lowResp.includes("sorry") && lowResp.includes("let's"))
@@ -208,7 +209,8 @@ async function send_msg(history){
       });
       console.log(history)
 
-      response = await newGenerate(history, "gpt-3.5-turbo-1106")
+      //response = await newGenerate(history, "gpt-3.5-turbo-1106")
+      response = await newGenerate(history, "gpt-3.5-turbo")
       lowResp = response.toLowerCase();
     }
      if (lowResp.includes("i cannot")
