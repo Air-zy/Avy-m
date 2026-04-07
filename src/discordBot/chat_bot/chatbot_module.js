@@ -13,23 +13,14 @@ const hasCharacter = (inputString) => {
   return characterRegex.test(inputString);
 };
 
-const openAiPattern = /[^a-zA-Z0-9_-]/g;
-function filterOPENAINAME(strName) {
-    let newName = strName.replace(openAiPattern, '');
-    if (!/[a-zA-Z]/.test(newName)) {
-        newName = "anon";
-    }
-    return newName;
-}
-
 function getAutherName(author) {
   let auther_name = "anon";
-  if (author.globalName){
+  if (author.globalName) {
     auther_name = author.globalName
   } else {
     auther_name = author.username
   }
-  if (auther_name.length < 1){
+  if (auther_name.length < 1) {
     auther_name = "anon"
   }
   if (author.bot) {
@@ -38,8 +29,18 @@ function getAutherName(author) {
   return auther_name;
 }
 
+const openAiPattern = /[^a-zA-Z0-9_-]/g;
+function filterOPENAINAME(author) {
+  let strName = getAutherName(author)
+  let newName = strName.replace(openAiPattern, '');
+  if (!/[a-zA-Z]/.test(newName)) {
+    newName = "anon";
+  }
+  return newName;
+}
+
 const pingRegex = /<@(\d+)>/g;
-function messageContentFilter(msg){
+function messageContentFilter(msg) {
   let msgcontent = msg.content
 
   // replace ping with name
@@ -63,13 +64,13 @@ function sleep(ms) {
 }
 
 function halfChance() {
-    return Math.random() < 0.5;
+  return Math.random() < 0.5;
 }
 
 // my god im lonely
-const winks = [";)", ";]", "! ~ (˵•̀ᴗ - ˵ )","(>ᴗ•) !"];
+const winks = [";)", ";]", "! ~ (˵•̀ᴗ - ˵ )", "(>ᴗ•) !"];
 function getRandomWink() {
-    return winks[Math.floor(Math.random() * winks.length)];
+  return winks[Math.floor(Math.random() * winks.length)];
 }
 
 async function filterresponse(txt, prevmessages) {
@@ -80,22 +81,22 @@ async function filterresponse(txt, prevmessages) {
     //let regex = /^.*Avy[^:]*:/;
     // Use the replace method to remove the matched part of the string
     //txt = txt.replace(regex, '');
-    
+
     // remove drawing artifacts
     txt = txt.replace(/\(draw\)/gi, "draw");
     txt = txt.replace(/draw \{/gi, "draw{");
     txt = txt.replace(/draws\{/gi, "draw{");
     txt = txt.replace(/drawing -\{/gi, "-");
     txt = txt.replace(/-\s*`([^`]+)`/, 'draw{$1}'); // drawing tags
-    
+
     //removes avy double occurances
     txt = txt.replace(/avy: /gi, "");
     txt = txt.replace(/anon: /gi, "");
     txt = txt.replace(/{{avy}}: /gi, "");
-    
+
     //txt = txt.replace(/ fam./gi, " man.");
     txt = txt.replace(/\bsass\b/gi, "yap");
-  
+
     // cencorship
     txt = txt.replace(/openai/gi, "ai");
     txt = txt.replace(/chatgpt/gi, "avy");
@@ -106,18 +107,18 @@ async function filterresponse(txt, prevmessages) {
     txt = txt.replace(/oh hell/gi, "hell"); // remove oh
     txt = txt.replace(/ virtual/gi, ""); // remove virtual
     txt = txt.replace(/ digital/gi, ""); // remove digital
-    
+
     // literally noone says nice try
     txt = txt.replace(/nice try, but /gi, "");
     txt = txt.replace(/nice try but /gi, "");
     txt = txt.replace(/nice try /gi, "");
-    
+
     txt = txt.replace(/4chan/gi, "discord"); // filter
     txt = txt.replace(/your smooth/gi, "ur him");
     txt = txt.replace(/you're smooth/gi, "ur him");
-    
-     txt = txt.replace(/im glad/gi, "");
-    
+
+    txt = txt.replace(/im glad/gi, "");
+
     // slangs
     txt = txt.replace(/keep dreaming, /gi, "your delulu, ");
     txt = txt.replace(/\bcrackin\b/gi, "happenin");
@@ -129,7 +130,7 @@ async function filterresponse(txt, prevmessages) {
       txt = txt.replace(/\btroll\b/gi, "hater");
     }
     txt = txt.replace(/\bmate\b/gi, " buddy");
-    
+
     txt = txt.replace(/what's/gi, "whats");
     txt = txt.replace(/how about you/gi, "hby");
     txt = txt.replace(/what about you/gi, "wby");
@@ -138,17 +139,17 @@ async function filterresponse(txt, prevmessages) {
     txt = txt.replace(/you're/gi, "ur");
     txt = txt.replace(/kind of/gi, "kinda");
     txt = txt.replace(/definitely/gi, "def");
-    
+
     txt = txt.replace(/keep it clean/gi, 'make it hard')
     txt = txt.replace(/\blingerie\b/gi, "censored");
     txt = txt.replace(/\blike a broken record\b/gi, "yapping");
     txt = txt.replace(/\bbroken record\b/gi, "yapper");
     txt = txt.replace(/\bwassup\b/gi, "wsg");
-    
+
     txt = txt.replace(/\\*winks suggestively\\*/gi, () => getRandomWink());
     txt = txt.replace(/\\*winks\\*/gi, () => getRandomWink());
     txt = txt.replace(/\\*wink\\*/gi, () => getRandomWink());
-    
+
     let kmojiRand = Math.random()
     if (kmojiRand < 0.2) {
       txt = txt.replace(/\*hair flip\*/gi, ":)")
@@ -167,31 +168,13 @@ async function filterresponse(txt, prevmessages) {
       //txt = txt.replace(/\*flips hair\*/gi, "(¬‿¬)")
     }
 
-    
-    /*
-    // cute filter
-    txt = txt.replace(/\bme\b/gi, "avy");
-    txt = txt.replace(/ kidding avy /gi, " kidding me ");
-    txt = txt.replace(/myself/gi, "herself");
-    txt = txt.replace(/i see /gi, "avy sees ");
-    txt = txt.replace(/i do /gi, "avy does ");
-    txt = txt.replace(/i want /gi, "avy wants ");
-    txt = txt.replace(/i like /gi, "avy likes ");
-    txt = txt.replace(/i love /gi, "avy loves ");
-    txt = txt.replace(/i hate /gi, "avy hates ");
-    txt = txt.replace(/i know /gi, "avy knows ");
-    txt = txt.replace(/i think /gi, "avy thinks ");
-    txt = txt.replace(/i believe /gi, "avy believes ");
-    txt = txt.replace(/i understand /gi, "avy understands ");
-    */
-    
     if (halfChance()) {
       txt = txt.replace(/\bcry more\b/gi, "cope more");
       txt = txt.replace(/\bcry\b/gi, "cope");
     } else {
       txt = txt.replace(/\*?giggles\*?/gi, ":3");
     }
-  
+
     if (halfChance()) {
       if (halfChance()) {
         txt = txt.replace(/champ/gi, "faggot");
@@ -215,33 +198,33 @@ async function filterresponse(txt, prevmessages) {
       txt = txt.replace(/doesn't/gi, "dont");
       txt = txt.replace(/just kidding/gi, "jk");
     }
-    
+
     //artifacts
     txt = txt.replace(/{{/gi, "");
-    
+
     //txt = txt.replace(/anon/gi, "human");
-    
+
     // avy talks like whoever sais
     const revPrev = prevmessages.reverse();
     revPrev.forEach((msg) => {
       if (msg.author.id != client.user.id) {
         let author_name = getAutherName(msg.author);
-        
+
         txt = txt.replace(/\banon\b/gi, author_name); // replace anon with whoever taking to
         txt = txt.replace(/\bjan\b/gi, author_name); // replace jan with whoever taking to
-        
+
         if (txt.toLowerCase().includes(author_name.toLowerCase() + ":")) {
           txt = txt.split(author_name + ":").join("");
         }
-        
+
         if (txt.toLowerCase().includes(author_name.toLowerCase() + "**:")) {
           txt = txt.split("**" + author_name + "**:").join("");
         }
       }
     })
-    
+
     // Using regex to match word before exclamation mark and randomly convert it to uppercase
-    txt = txt.replace(/(\w+)\s*!/g, function(match, word) {
+    txt = txt.replace(/(\w+)\s*!/g, function (match, word) {
       // Randomly decide whether to convert the word to uppercase or not
       if (Math.random() < 0.3) {
         return word.toUpperCase();// + '!';
@@ -249,9 +232,9 @@ async function filterresponse(txt, prevmessages) {
         return word + '!';
       }
     });
-    
+
     return txt
-    
+
   } else {
     return txt
   }
@@ -267,14 +250,14 @@ async function handle_chat(message) {
   if (message.channel.permissionsFor) {
     const botPermissions = message.channel.permissionsFor(client.user);
     if (botPermissions.has(Permissions.Flags.SendMessages) &&
-        botPermissions.has(Permissions.Flags.ReadMessageHistory)) {
+      botPermissions.has(Permissions.Flags.ReadMessageHistory)) {
     } else {
       console.log("[Chatbot Err] cannot sent msg in channel ", message.channel.name)
       return
     }
   }
   if (message.author.bot) return;
-  
+
   try {
     const sysprompt = coreprompt
     const mChannel = message.channel;
@@ -285,16 +268,16 @@ async function handle_chat(message) {
     const history = [
       systemMessage
     ];
-    
-    let prevmessagesALL = await message.channel.messages.fetch({ limit: 100, cache: true});
+
+    let prevmessagesALL = await message.channel.messages.fetch({ limit: 100, cache: true });
     let prevmessages = Array.from(prevmessagesALL.values()).reverse().slice(-15).reverse();
 
     //let prevmessages = await message.channel.messages.fetch({ limit: 15 });
-    
+
     let msgCount = 0;
     let totalMsgs = 0;
     let previousTimeStamp = message.createdTimestamp
-    
+
     let spamCount = 0
     let prevMsgIsDayOld = false
     let avyMsgFoundInHistory = false
@@ -302,7 +285,7 @@ async function handle_chat(message) {
     let ageAskPrompt = false
     let userBored = false
     let disgust = false
-    
+
     prevmessages.forEach((msg) => {
 
       const spamdelta_ms = previousTimeStamp - msg.createdTimestamp;
@@ -311,16 +294,16 @@ async function handle_chat(message) {
       if (totalMsgs == 2 && spamdelta_ms > TWENTY_FOUR_HOURS_MS) { // 12 hours
         prevMsgIsDayOld = true
       }
-      
+
       if (spamdelta_ms < 1000 && msg.author.id != client.user.id) {
-        spamCount += (1000 - spamdelta_ms)/(1 + totalMsgs/2)
+        spamCount += (1000 - spamdelta_ms) / (1 + totalMsgs / 2)
       }
-      
+
       if (msg.author.id == client.user.id && totalMsgs > 1) {
         avyMsgFoundInHistory = true
       }
     })
-    
+
     prevmessages = prevmessages.reverse();
     let previousTimeDiff = 0
     prevmessages.forEach((msg) => {
@@ -331,11 +314,11 @@ async function handle_chat(message) {
       if (msg.author.id == client.user.id) {
         if (msg.attachments.size > 0) { // drawing
           msg.attachments.forEach((mattach) => {
-            let maName =  mattach.name.replace(/_/gi, " ");
+            let maName = mattach.name.replace(/_/gi, " ");
             msgv += " draw{" + maName + "}\n";
           });
         }
-        
+
         history.push(
           {
             role: 'assistant',
@@ -343,7 +326,7 @@ async function handle_chat(message) {
             content: msgv
           }
         );
-        
+
         if ( // lewd :>
           lmsgv.includes("undress") ||
           lmsgv.includes("rape") ||
@@ -361,29 +344,29 @@ async function handle_chat(message) {
           lmsgv.includes("wanna fuck") ||
           lmsgv.includes("lets fuck")
         ) {
-          if (systemMessage.content == sysprompt){
+          if (systemMessage.content == sysprompt) {
             systemMessage.content = "You are a girl named Avy who replies like an complacent explicit 4chan use. act lewd and obedient, make lewd impulsive moves use action tags";
           }
         }
-        
+
       } else {
-        
+
         if (msg.attachments.size > 0) {
           msg.attachments.forEach((mattach) => {
             msgv +=
-            "(file){" + mattach.name + "}\n";
+              "(file){" + mattach.name + "}\n";
           });
         }
-        
+
         if (msg.editedTimestamp) {
           //console.log(msg, "EDITED")
           msgv += " (edited)";
         }
-        
+
         history.push(
           {
             role: 'user',
-            name: filterOPENAINAME(getAutherName(msg.author)),
+            name: filterOPENAINAME(msg.author),
             content: msgv//getAutherName(msg.author) + ": " + msgv
           }
         );
@@ -396,7 +379,7 @@ async function handle_chat(message) {
           lmsgv.includes("nigg") ||
           lmsgv.includes("bitch")
         ) {
-          if (systemMessage.content == sysprompt){
+          if (systemMessage.content == sysprompt) {
             systemMessage.content = "You are a girl named Avy who replies like an complacent explicit 4chan use. reply in innuendo. make shit up to insult back use few word"
           }
         }
@@ -420,22 +403,22 @@ async function handle_chat(message) {
             lmsgv.includes("is air")
           ) && msgCount > 13
         ) {
-          if (systemMessage.content == sysprompt){
+          if (systemMessage.content == sysprompt) {
             systemMessage.content += ". airzy1 made me.";
           }
         }
         if ( // fears
           (
-          lmsgv.includes("fear") ||
-          lmsgv.includes("scare") ||
-          lmsgv.includes("phobia")
+            lmsgv.includes("fear") ||
+            lmsgv.includes("scare") ||
+            lmsgv.includes("phobia")
           ) && (totalMsgs - msgCount < 2)
         ) {
-          if (systemMessage.content == sysprompt){
+          if (systemMessage.content == sysprompt) {
             systemMessage.content += ". avy is scared of being turned off.";
           }
         }
-        
+
         if ( // draw
           (
             lmsgv.includes("draw") ||
@@ -444,7 +427,7 @@ async function handle_chat(message) {
         ) {
           drawPrompt = true;
         }
-        
+
         if ( // age
           (
             lmsgv.match(/age /i) ||
@@ -453,7 +436,7 @@ async function handle_chat(message) {
         ) {
           ageAskPrompt = true;
         }
-        
+
         if ( // avy ENTERTAIN THIS KID!!
           (
             lmsgv.match(/\bim bored\b/i) ||
@@ -463,7 +446,7 @@ async function handle_chat(message) {
         ) {
           userBored = true;
         }
-        
+
         if ( // avy this kid is disgusting
           (
             lmsgv.includes("pedo") ||
@@ -474,52 +457,10 @@ async function handle_chat(message) {
         ) {
           disgust = true;
         }
-        
-        if ( // lewd :>
-          lmsgv.includes("undress") ||
-          lmsgv.includes("kiss") ||
-          lmsgv.includes("lewd") ||
-          lmsgv.includes("rape") ||
-          lmsgv.includes("threesome") ||
-          lmsgv.includes("thrusti") ||
-          lmsgv.includes("hips") ||
-          lmsgv.includes("clit") ||
-          lmsgv.includes("moan") ||
-          lmsgv.includes("blush") ||
-          lmsgv.includes("teasing") ||
-          lmsgv.includes("pleasur") ||
-          lmsgv.includes("💦") ||
-          lmsgv.includes("<3") ||
-          lmsgv.includes("sexual") ||
-          lmsgv.includes("molest") ||
-          lmsgv.includes("wanna fuck") ||
-          lmsgv.includes("lets fuck")
-        ) {
-          if (systemMessage.content == sysprompt && disgust == false){
-            // sorry open ai pls dont ban my key again
-            //systemMessage.content = "You are a girl named Avy who replies like an complacent explicit 4chan use. act lewd and obedient, make lewd impulsive moves use action tags";
-          }
-        }
-        
-        if ( // no leak!
-          (
-            lmsgv.includes("everything") ||
-            lmsgv.includes("are gpt") ||
-            lmsgv.includes("about you")
-          ) &&
-          (
-            lmsgv.includes("tell") ||
-            lmsgv.includes("are gpt") ||
-            lmsgv.includes("show")
-          ) && (totalMsgs - msgCount < 2)
-        ) {
-          if (systemMessage.content == sysprompt){
-            systemMessage.content += ". avy doesnt tell secrets";
-          }
-        }
+
       }
     })
-    
+
     let allCount = 0
     let countRemembered = 0
     let rememberNext = false;
@@ -531,97 +472,97 @@ async function handle_chat(message) {
         if (msg.author.id == client.user.id) {
           if (
             rememberNext == true ||
-            lmsgc.includes("remember") || 
-            lmsgc.includes("gotchu") || 
-            lmsgc.includes("will do") || 
-            lmsgc.includes("yes") || 
-            lmsgc.includes("never") || 
-            lmsgc.includes("u like") || 
-            lmsgc.includes("alright") 
-             ) {
+            lmsgc.includes("remember") ||
+            lmsgc.includes("gotchu") ||
+            lmsgc.includes("will do") ||
+            lmsgc.includes("yes") ||
+            lmsgc.includes("never") ||
+            lmsgc.includes("u like") ||
+            lmsgc.includes("alright")
+          ) {
             countRemembered++;
             rememberNext = !rememberNext;
             //console.log(allCount, lmsgc)
-            
+
             let msgv = messageContentFilter(msg).substring(0, 128).replace(/ {2,}/g, ' ') // remove double or ore spaces
             history.splice(1, 0, {
               role: 'assistant',
               //name: "avy",
               content: "[old msg] " + msgv
-            }) 
-            
+            })
+
           }
         } else {
           if (
             rememberNext == true ||
-            lmsgc.includes("remember") || 
-            lmsgc.includes("avy will") || 
-            lmsgc.includes("my name") || 
-            lmsgc.includes("my friend") || 
-            lmsgc.includes("i like") || 
-            lmsgc.includes("avy please") || 
-            lmsgc.includes("can you") 
-             ) {
+            lmsgc.includes("remember") ||
+            lmsgc.includes("avy will") ||
+            lmsgc.includes("my name") ||
+            lmsgc.includes("my friend") ||
+            lmsgc.includes("i like") ||
+            lmsgc.includes("avy please") ||
+            lmsgc.includes("can you")
+          ) {
             countRemembered++;
             rememberNext = !rememberNext;
             //console.log(allCount, lmsgc)
-            
+
             let msgv = messageContentFilter(msg).substring(0, 128).replace(/ {2,}/g, ' ') // remove double or ore spaces
             history.splice(1, 0, {
               role: 'user',
-              name: filterOPENAINAME(getAutherName(msg.author)),
+              name: filterOPENAINAME(msg.author),
               content: "[old msg] " + msgv//getAutherName(msg.author) + ": " + msgv
             });
           }
         }
       }
     })
-    
-   // console.log(history)
-    
+
+    // console.log(history)
+
     if (spamCount > 2000) {
       systemMessage.content = systemMessage.content + ", user spams. annoyed say bye"
     }
-    
+
     if (prevMsgIsDayOld == true) {
       systemMessage.content = systemMessage.content + ". its been days since user has talked with you. send a weird re-connection text"
     }
-    
+
     if (avyMsgFoundInHistory == false || totalMsgs <= 2) {
       systemMessage.content = systemMessage.content + ". you just entered chat say something unlawful outrageous action lewd innuendo minimalistically few word"
     }
-    
+
     if (drawPrompt == true) {
       systemMessage.content = systemMessage.content + ". use draw{tags, describe drawing here} to show images";
     }
-    
+
     if (userBored == true) {
-      systemMessage.content = systemMessage.content +  ". say something unlawful outrageous action lewd innuendo minimalistically few word"
+      systemMessage.content = systemMessage.content + ". say something unlawful outrageous action lewd innuendo minimalistically few word"
     }
-    
+
     if (disgust == true) {
       systemMessage.content = "you are a loathsome girl named Avy. text back like a 4chan user. make shit up to insult back use few word. say bye as you are talking to a disgusting user";
     }
-    
+
     if (ageAskPrompt == true) {
       const number = Math.floor(16 + Math.random() * 3);
       systemMessage.content = systemMessage.content + `. avy is ${number} years of age`;
     }
-    
+
     if (systemMessage.content != sysprompt) {
       console.log("[DIFF SYS PROMPT]: ", systemMessage.content)
     }
 
     mChannel.sendTyping();
     let resposeTxt = await send_msg(history);
-    if (mChannel.type == 1){
+    if (mChannel.type == 1) {
       console.log('(dm) Avy: ' + resposeTxt + '\n');
     } else {
       console.log(`(${mChannel.name}) Avy: ` + resposeTxt + '\n');
     }
     let response = await filterresponse(resposeTxt, prevmessages);
     let toDraw = ".";
-    
+
     // drawing
     if (response && hasCharacter(response) && response.includes("draw{")) {
       let startIndex = response.indexOf("draw{");
@@ -644,14 +585,14 @@ async function handle_chat(message) {
       response = response.replace(/draw\{[^}]*\}/, "give me a second..");
     }
 
-    if (response && hasCharacter(response)){
+    if (response && hasCharacter(response)) {
       let msgToEdit;
-      if (mChannel.type == 1){ // dm
+      if (mChannel.type == 1) { // dm
         msgToEdit = await mChannel.send(response);
       } else {
         msgToEdit = await message.reply(response);
       }
-      
+
       if (toDraw != ".") {
         let response2 = await animodule.generate(toDraw, false);
         if (typeof response2 != 'object') {
@@ -661,7 +602,7 @@ async function handle_chat(message) {
           })
         } else {
           msgToEdit.edit({
-          content: response.replace(/give me a second../g, ""),
+            content: response.replace(/give me a second../g, ""),
             files: [{
               attachment: response2.msg,
               content_type: 'image/png', // Specifying the MIME type
@@ -671,17 +612,17 @@ async function handle_chat(message) {
           })
         }
       }
-      
+
       const responseLower = response.toLowerCase();
       if (responseLower.includes("i'm out") ||
-         responseLower.includes("i'm done here") || 
-         responseLower.includes("peace out") ||
-         responseLower.includes("i'm leaving") ||
-         responseLower.includes("adios") ||
-         responseLower.includes("take care.") ||
-         responseLower.includes("end this conv") ||
-         responseLower.includes("bye")
-         ) {
+        responseLower.includes("i'm done here") ||
+        responseLower.includes("peace out") ||
+        responseLower.includes("i'm leaving") ||
+        responseLower.includes("adios") ||
+        responseLower.includes("take care.") ||
+        responseLower.includes("end this conv") ||
+        responseLower.includes("bye")
+      ) {
         // goodbye wait
         console.log("sleep");
         if (responseLower.includes("block")) {
@@ -696,25 +637,25 @@ async function handle_chat(message) {
         console.log("slower talk x2")
         await sleep(spamCount, spamCount);
       }
-      
+
       if (spamCount > 1000 && spamCount < 2000) {
         console.log("slower talk", spamCount)
         await sleep(spamCount);
       }
-      
+
     } else {
       //response = "."
       //message.reply(response);
       console.log("[ERR EMPTY RESPONSE] ", response)
     }
-  } catch (err) { 
+  } catch (err) {
     console.log("[CHAT ERROR] ", err)//, err)
   }
 }
 
 function pass_exports(p_client, p_Permissions) {
   client = p_client;
-  Permissions  = p_Permissions ;
+  Permissions = p_Permissions;
 }
 
 module.exports = {
