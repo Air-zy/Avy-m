@@ -113,12 +113,12 @@ async function respond_process(mChannel, history) {
         if (!text) return;
 
         if (text.length <= 2000) {
-            //await mChannel.send({ content: text });
+            await mChannel.send({ content: text });
             return;
         }
 
         for (let i = 0; i < text.length; i += 1900) {
-            //await mChannel.send({ content: text.slice(i, i + 1900) });
+            await mChannel.send({ content: text.slice(i, i + 1900) });
         }
     };
 
@@ -204,7 +204,7 @@ async function respond_process(mChannel, history) {
 
             enqueue(processPendingLines);
 
-            process.stdout.write(chunk);
+            //process.stdout.write(chunk);
         },
 
         onFinal: async () => {
