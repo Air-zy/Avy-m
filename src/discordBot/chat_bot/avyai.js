@@ -75,7 +75,7 @@ function buildInputData(history) {
     return {
         messages: history,
         max_tokens: 512,
-        temperature: 0.7,
+        temperature: 2,
         top_p: 0.9,
         top_k: 40,
         min_p: 0.05,
