@@ -256,7 +256,7 @@ async function build_history(message) {
 
     let prevmessagesALL = await message.channel.messages.fetch({ limit: 100, cache: true });
     //let prevmessages = Array.from(prevmessagesALL.values()).reverse().slice(-15).reverse();
-    let prevmessages = Array.from(prevmessagesALL.values()).slice(0, 40);
+    let prevmessages = Array.from(prevmessagesALL.values()).slice(0, 15);
 
     //let prevmessages = await message.channel.messages.fetch({ limit: 15 });
 
