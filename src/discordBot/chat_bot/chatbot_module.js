@@ -357,7 +357,7 @@ async function build_history(message) {
                 ) && msgCount > 13
             ) {
                 if (systemMessage.content == sysprompt) {
-                    systemMessage.content += ". airzy1 made me.";
+                    systemMessage.content += ". airzy1 is my real creator";
                 }
             }
 
