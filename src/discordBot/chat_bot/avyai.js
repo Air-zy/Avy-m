@@ -79,7 +79,7 @@ function buildInputData(history) {
         top_p: 0.9,
         top_k: 40,
         min_p: 0.05,
-        presence_penalty: 4,
+        presence_penalty: 2,
         seed: Math.floor(Math.random() * 65536)
     }
 }

@@ -2,8 +2,8 @@ const { generate, buildInputData, sysprompt } = require('../chat_bot/avyai.js')
 
 module.exports = async (interaction) => {
     const userQuestion = interaction.options.getString('question');
-
-    //const author = interaction.user;
+    const author = interaction.user;
+    console.log(author,"asks:",userQuestion)
     let systemMessage = {
       role: "system",
       content: sysprompt
