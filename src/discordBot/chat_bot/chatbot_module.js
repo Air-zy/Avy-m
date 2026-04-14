@@ -54,6 +54,13 @@ function messageContentFilter(msg) {
     return msgcontent
 }
 
+function filterSentText(text) {
+    return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        // replace common spelling variants
+        .replace(/\bsi+c+a+r+i+u?s?\b/gi, "airzy");
+}
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
 const { generate, buildInputData, sysprompt } = require('./avyai.js');
@@ -109,7 +116,7 @@ async function respond_process(mChannel, history) {
     };
 
     const sendText = async (content) => {
-        const text = (content || "").trimEnd();
+        const text = filterSentText(content || "").trimEnd();
         if (!text) return;
 
         if (text.length <= 2000) {
