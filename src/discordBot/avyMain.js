@@ -24,28 +24,14 @@ const client = new Client({
   ]
 });
 
-/*
-{ 
-  activities: [{ 
-    name: "hi", // The name of the activity
-    type: 0, // 0playing 1streaming 2listening 3watching 4custom 5competing
-    state: "hi",
-  }],
-  //status: 'online'
-  // online
-  // dnd
-  // idle
-}
-*/
-
 client.on('ready', async () => {
   console.log(`[SUCCESS login] ${client.user.tag}!`);
 
   await client.user.setPresence({
     activities: [{
-      name: "gooing", // The name of the activity
-      type: 4, // 0playing 1streaming 2listening 3watching 4custom 5competing
-      state: "gooing",
+      name: "new engine", // The name of the activity
+      type: 4, // https://discord.js.org/docs/packages/discord-api-types/0.38.43/v10/ActivityType:Enum
+      state: "new engine",
     }],
     //status: 'online'
     // online

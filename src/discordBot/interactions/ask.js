@@ -1,5 +1,4 @@
 const send_msg = require('../chat_bot/chat_generate')
-const sysprompt = require('../chat_bot/getSystemPrompt')
 
 
 const openAiPattern = /[^a-zA-Z0-9_-]/g;

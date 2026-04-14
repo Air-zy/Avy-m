@@ -47,6 +47,7 @@ const cmd_funcs = require("./msg_cmds.js");
 const userTimeouts = new Map();
 const delay = 1000;
 const { sendToRowa } = require("./rowa/sendMsgToRowa.js")
+
 module.exports = async (client, message) => {
   if (userTimeouts.has(message.author.id)) {
     return;
@@ -54,7 +55,7 @@ module.exports = async (client, message) => {
   userTimeouts.set(message.author.id, true);
 
   if (message.channel.type === 1){
-    console.log(`(${message.channel.id})(dm) ${message.author.username}: ${message.content}`); 
+    console.log(`\n(${message.channel.id})(dm) ${message.author.username}: ${message.content}`); 
   }
 
   if (message.channel.id === "1404212337426042910" && !message.webhookId) { // whooks channel
@@ -82,7 +83,7 @@ module.exports = async (client, message) => {
     const chk = await isTalkingToBot(client, message);
     if (chk == true) {
       if (message.channel.type != 1) { // not in DM
-        console.log(`(${message.channel.id})(${message.channel.name}) ${message.author.username}: ${message.content}`);
+        console.log(`\n(${message.channel.id})(${message.channel.name}) ${message.author.username}: ${message.content}`);
       }
       await chatbot_mod.handle_chat(message);
     }
