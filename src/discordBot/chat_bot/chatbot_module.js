@@ -55,11 +55,13 @@ function messageContentFilter(msg) {
 }
 
 function filterSentText(text) {
-    return text
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        // replace common spelling variants
-        .replace(/\bsi+c+a+r+i+u?s?\b/gi, "airzy");
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    // remove "avy: " anywhere it appears
+    .replace(/^avy:\s*/i, "")
+    // replace common spelling variants
+    .replace(/\bsi+c+a+r+i+u?s?\b/gi, "airzy");
 }
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
