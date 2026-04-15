@@ -468,7 +468,7 @@ async function build_history(message) {
         console.log("[DIFF SYS PROMPT]: ", systemMessage.content)
     }
 
-    console.log(history)
+    //console.log(history)
     return history
 }
 

@@ -29,6 +29,8 @@ module.exports = async (interaction) => {
   ];
 
   const inputData = buildInputData(history);
+  inputData.temperature = 0.5
+  inputData.presence_penalty = 1
 
   let raw = '';
   let lastRendered = '';
