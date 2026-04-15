@@ -58,8 +58,8 @@ function filterSentText(text) {
     return text
         .normalize("NFD")
         .replace(/[\u0300-\u036f]/g, "")
-        // remove "avy: " anywhere it appears
-        .replace(/^avy:\s*/i, "")
+        // remove one or more leading "avy:" prefixes (case-insensitive), including any following spaces
+        .replace(/^(?:avy:\s*)+/i, "")
         // replace common spelling variants
         .replace(/\bsi+c+a+r+i+u?s?\b/gi, "airzy");
 }
@@ -265,7 +265,7 @@ async function build_history(message) {
 
     let prevmessagesALL = await message.channel.messages.fetch({ limit: 100, cache: true });
     //let prevmessages = Array.from(prevmessagesALL.values()).reverse().slice(-15).reverse();
-    let prevmessages = Array.from(prevmessagesALL.values()).slice(0, 40);
+    let prevmessages = Array.from(prevmessagesALL.values()).slice(0, 80);
 
     //let prevmessages = await message.channel.messages.fetch({ limit: 15 });
 
@@ -331,7 +331,7 @@ async function build_history(message) {
                 });
             }
 
-            pushMergedHistory("assistant", speakerName, msgv);
+            pushMergedHistory("assistant", "avy", msgv);
         } else {
             if (msg.attachments.size > 0) {
                 msg.attachments.forEach((mattach) => {
@@ -403,7 +403,7 @@ async function build_history(message) {
     prevmessagesALL = prevmessagesALL.reverse()
     prevmessagesALL.forEach((msg) => {
         allCount++;
-        if (allCount < 85 && countRemembered < 6) {
+        if (allCount < 20 && countRemembered < 6) {
             const lmsgc = msg.content.toLowerCase();
             if (msg.author.id == client.user.id) {
                 if (
@@ -468,6 +468,7 @@ async function build_history(message) {
         console.log("[DIFF SYS PROMPT]: ", systemMessage.content)
     }
 
+    console.log(history)
     return history
 }
 

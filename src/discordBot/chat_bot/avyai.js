@@ -79,12 +79,12 @@ function buildInputData(history) {
         top_p: 0.9,
         top_k: 40,
         min_p: 0.05,
-        presence_penalty: 2,
+        presence_penalty: 4,
         seed: Math.floor(Math.random() * 65536)
     }
 }
 
-const sysprompt = "ur a discord girl named avy whos smart explicit, repond as \"avy:\" use few word";
+const sysprompt = "ur a discord girl named avy whos witty explicit, repond as \"avy:\" use few word";
 module.exports = {
     generate,
     buildInputData,
