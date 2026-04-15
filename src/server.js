@@ -31,6 +31,8 @@ const { startCycler } = require('./heartSystem/heart.js');
 startCycler();
 
 (async () => {
+  require('./consolehook.js'); // init hook FIRST
+
   const { setup } =  require('./discordBot/modules/mobilePresence.js')
   await setup();
 
