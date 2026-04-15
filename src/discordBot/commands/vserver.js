@@ -32,8 +32,12 @@ module.exports = {
     const fetchedGuild = await client.guilds.fetch(searchId);
 
     if (fetchedGuild) {
+      console.log(fetchedGuild)
       guildInfo += `owner_id: ${fetchedGuild.ownerId}\n`;
       guildInfo += `features: [${toText(foundGuild.features)}]\n\n`;
+      guildInfo += `joined: ${new Date(fetchedGuild.joinedTimestamp)}`;
+      guildInfo += `preferredLocale: ${fetchedGuild.preferredLocale}`;
+      guildInfo += `memberCount: ${fetchedGuild.memberCount}`;
       guildInfo += '[CHANNELS]: \n';
 
       const fguildChannels = await fetchedGuild.channels.fetch();
@@ -47,12 +51,16 @@ module.exports = {
       });
 
       channelsArray.forEach((channel) => {
+        let channelName = channel.name
+        if (channel.nsfw === true) {
+          channelName = "[nsfw] " + channelName;
+        }
         if (channel.type === 4) {
-          guildInfo += `\n\n${channel.name}`;
+          guildInfo += `\n\n${channelName}`;
         } else if (channel.type === 2) {
-          guildInfo += `\n 𝄞 ${channel.name}, ${channel.type}   *${channel.id}*`;
+          guildInfo += `\n 𝄞 ${channelName}, ${channel.type}   *${channel.id}*`;
         } else {
-          guildInfo += `\n ◦ ${channel.name}, ${channel.type}   *${channel.id}*`;
+          guildInfo += `\n ◦ ${channelName}, ${channel.type}   *${channel.id}*`;
         }
       });
     }

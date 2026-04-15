@@ -40,8 +40,8 @@ module.exports = {
       .map(([ownerId, guildList]) => {
         const servers = guildList
           .map(g => `[${g.memberCount}] ${g.name} \`${g.id}\``)
-          .join(', ');
-        return `${ownerId}: ${servers}`;
+          .join('\n');
+        return `multiowner: ${ownerId}: ${servers}\n`;
       });
 
     if (multiOwners.length) {
