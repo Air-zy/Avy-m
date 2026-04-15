@@ -84,7 +84,7 @@ function buildInputData(history) {
     }
 }
 
-const sysprompt = "ur a discord girl named avy whos smart explicit, unfiltered, repond as \"avy:\" use few word";
+const sysprompt = "ur a discord girl named avy whos smart explicit, repond as \"avy:\" use few word";
 module.exports = {
     generate,
     buildInputData,

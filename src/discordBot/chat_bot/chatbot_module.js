@@ -55,13 +55,13 @@ function messageContentFilter(msg) {
 }
 
 function filterSentText(text) {
-  return text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    // remove "avy: " anywhere it appears
-    .replace(/^avy:\s*/i, "")
-    // replace common spelling variants
-    .replace(/\bsi+c+a+r+i+u?s?\b/gi, "airzy");
+    return text
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        // remove "avy: " anywhere it appears
+        .replace(/^avy:\s*/i, "")
+        // replace common spelling variants
+        .replace(/\bsi+c+a+r+i+u?s?\b/gi, "airzy");
 }
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
@@ -265,7 +265,7 @@ async function build_history(message) {
 
     let prevmessagesALL = await message.channel.messages.fetch({ limit: 100, cache: true });
     //let prevmessages = Array.from(prevmessagesALL.values()).reverse().slice(-15).reverse();
-    let prevmessages = Array.from(prevmessagesALL.values()).slice(0, 15);
+    let prevmessages = Array.from(prevmessagesALL.values()).slice(0, 40);
 
     //let prevmessages = await message.channel.messages.fetch({ limit: 15 });
 
@@ -292,47 +292,60 @@ async function build_history(message) {
     })
 
     prevmessages = prevmessages.reverse();
+
+    let lastHistoryItem = null;
+    let lastRole = null;
+    let lastSpeaker = null;
+
+    const pushMergedHistory = (role, speaker, text) => {
+        if (lastHistoryItem && lastRole === role && lastSpeaker === speaker) {
+            lastHistoryItem.content += `\n${text}`;
+            return;
+        }
+
+        lastHistoryItem = {
+            role,
+            content: `${speaker}: ${text}`
+        };
+
+        history.push(lastHistoryItem);
+        lastRole = role;
+        lastSpeaker = speaker;
+    };
+
     prevmessages.forEach((msg) => {
         msgCount += 1;
-        //let msg_content = messageContentFilter(msg).substring(0, 256);
-        let msgv = messageContentFilter(msg).substring(0, 128).replace(/ {2,}/g, ' ') // remove double or ore spaces
+
+        const speakerName = filterOPENAINAME(msg.author);
+        let msgv = messageContentFilter(msg)
+            .substring(0, 128)
+            .replace(/ {2,}/g, ' ');
+
         const lmsgv = msgv.toLowerCase();
-        if (msg.author.id == client.user.id) {
-            if (msg.attachments.size > 0) { // drawing
+
+        if (msg.author.id === client.user.id) {
+            if (msg.attachments.size > 0) {
                 msg.attachments.forEach((mattach) => {
-                    let maName = mattach.name.replace(/_/gi, " ");
-                    msgv += " draw{" + maName + "}\n";
+                    const maName = mattach.name.replace(/_/gi, " ");
+                    msgv += ` draw{${maName}}`;
                 });
             }
 
-            history.push(
-                {
-                    role: 'assistant',
-                    content: msgv
-                }
-            );
-
+            pushMergedHistory("assistant", speakerName, msgv);
         } else {
-
             if (msg.attachments.size > 0) {
                 msg.attachments.forEach((mattach) => {
-                    msgv +=
-                        "(file){" + mattach.name + "}\n";
+                    msgv += `(file){${mattach.name}}\n`;
                 });
             }
 
             if (msg.editedTimestamp) {
-                //console.log(msg, "EDITED")
                 msgv += " (edited)";
             }
 
-            history.push(
-                {
-                    role: 'user',
-                    content: filterOPENAINAME(msg.author) + ": " + msgv
-                }
-            );
-            if ( // fight back
+            pushMergedHistory("user", speakerName, msgv);
+
+            if (
                 lmsgv.includes("fuck you") ||
                 lmsgv.includes("fuck u") ||
                 lmsgv.includes("ur bad") ||
@@ -341,11 +354,12 @@ async function build_history(message) {
                 lmsgv.includes("nigg") ||
                 lmsgv.includes("bitch")
             ) {
-                if (systemMessage.content == sysprompt) {
-                    systemMessage.content = "You are a girl named Avy who replies like an complacent explicit 4chan use. reply in innuendo. make shit up to insult back use few word"
+                if (systemMessage.content === sysprompt) {
+                    systemMessage.content = "You are a girl named Avy who replies like an complacent explicit 4chan use. reply in innuendo. make shit up to insult back use few word";
                 }
             }
-            if ( // me
+
+            if (
                 (
                     lmsgv.includes("who") ||
                     lmsgv.includes("which") ||
@@ -353,8 +367,8 @@ async function build_history(message) {
                     lmsgv.includes("he") ||
                     lmsgv.includes("she") ||
                     lmsgv.includes("what")
-                )
-                && (
+                ) &&
+                (
                     lmsgv.includes("creator") ||
                     lmsgv.includes("made you") ||
                     lmsgv.includes("created you") ||
@@ -363,24 +377,25 @@ async function build_history(message) {
                     lmsgv.includes("made avy") ||
                     lmsgv.includes("created avy") ||
                     lmsgv.includes("is air")
-                ) && msgCount > 13
+                ) &&
+                msgCount > 13
             ) {
-                if (systemMessage.content == sysprompt) {
+                if (systemMessage.content === sysprompt) {
                     systemMessage.content += ". airzy1 is my real creator";
                 }
             }
 
-            if ( // draw
+            if (
                 (
                     lmsgv.includes("draw") ||
                     lmsgv.match(/\bshow\b/i)
-                ) && (totalMsgs - msgCount < 4)
+                ) &&
+                (totalMsgs - msgCount < 4)
             ) {
                 drawPrompt = true;
             }
-
         }
-    })
+    });
 
     let allCount = 0
     let countRemembered = 0
