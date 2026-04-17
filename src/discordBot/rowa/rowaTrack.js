@@ -26,7 +26,6 @@ async function startRowaTracker(client) {
 
   setInterval( async () => {
     const totalPlrs = await getTotalPlayers()
-    console.log("rowa tracker:", totalPlrs)
     if (totalPlrs != lastPlrCount && (Date.now() - lastRenameTime > COOLDOWN_MS) ) {
       console.log("rowa plr count: ", totalPlrs)
       

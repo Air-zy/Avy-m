@@ -51,6 +51,8 @@ function messageContentFilter(msg) {
         msgcontent = "@" + getAutherName(msg.mentions.repliedUser) + " " + msgcontent
     }
 
+    //console.log(msg)
+
     return msgcontent
 }
 
@@ -254,6 +256,7 @@ async function respond_process(mChannel, history) {
     });
 }
 
+const { imgUrlToText } = require('./imgURLToTxt.js')
 async function build_history(message) {
     let systemMessage = {
         role: "system",
@@ -278,7 +281,6 @@ async function build_history(message) {
     let drawPrompt = false
 
     prevmessages.forEach((msg) => {
-
         const spamdelta_ms = previousTimeStamp - msg.createdTimestamp;
         previousTimeStamp = msg.createdTimestamp
         totalMsgs += 1;
@@ -288,6 +290,19 @@ async function build_history(message) {
 
         if (spamdelta_ms < 1000 && msg.author.id != client.user.id) {
             spamCount += (1000 - spamdelta_ms) / (1 + totalMsgs / 2)
+        }
+
+        // img read...
+        if (msg.embeds.length > 0) {
+            msg.embeds.forEach((embed) => {
+                const data = embed.data
+                if (!data) { return; }
+                const thumb = data.thumbnail
+                if (!thumb) { return; }
+                const url = thumb.proxy_url || thumb.url;
+                imgUrlToText(url)
+                //console.log(url)
+            });
         }
     })
 
@@ -318,7 +333,7 @@ async function build_history(message) {
 
         const speakerName = filterOPENAINAME(msg.author);
         let msgv = messageContentFilter(msg)
-            .substring(0, 128)
+            .substring(0, 512)
             .replace(/ {2,}/g, ' ');
 
         const lmsgv = msgv.toLowerCase();
@@ -331,7 +346,8 @@ async function build_history(message) {
                 });
             }
 
-            pushMergedHistory("assistant", "avy", msgv);
+            const cleanedMsgv = msgv.replace(/\p{RGI_Emoji}/gv, "");
+            pushMergedHistory("assistant", "avy", cleanedMsgv);
         } else {
             if (msg.attachments.size > 0) {
                 msg.attachments.forEach((mattach) => {
@@ -344,20 +360,6 @@ async function build_history(message) {
             }
 
             pushMergedHistory("user", speakerName, msgv);
-
-            if (
-                lmsgv.includes("fuck you") ||
-                lmsgv.includes("fuck u") ||
-                lmsgv.includes("ur bad") ||
-                lmsgv.includes("ur ugly") ||
-                lmsgv.includes("stfu") ||
-                lmsgv.includes("nigg") ||
-                lmsgv.includes("bitch")
-            ) {
-                if (systemMessage.content === sysprompt) {
-                    systemMessage.content = "You are a girl named Avy who replies like an complacent explicit 4chan use. reply in innuendo. make shit up to insult back use few word";
-                }
-            }
 
             if (
                 (
@@ -420,7 +422,7 @@ async function build_history(message) {
                     rememberNext = !rememberNext;
                     //console.log(allCount, lmsgc)
 
-                    let msgv = messageContentFilter(msg).substring(0, 128).replace(/ {2,}/g, ' ') // remove double or ore spaces
+                    let msgv = messageContentFilter(msg).substring(0, 512).replace(/ {2,}/g, ' ') // remove double or ore spaces
                     history.splice(1, 0, {
                         role: 'assistant',
                         content: "[old msg] " + msgv
@@ -442,7 +444,7 @@ async function build_history(message) {
                     rememberNext = !rememberNext;
                     //console.log(allCount, lmsgc)
 
-                    let msgv = messageContentFilter(msg).substring(0, 128).replace(/ {2,}/g, ' ') // remove double or ore spaces
+                    let msgv = messageContentFilter(msg).substring(0, 512).replace(/ {2,}/g, ' ') // remove double or ore spaces
                     history.splice(1, 0, {
                         role: 'user',
                         content: "[old msg] " + filterOPENAINAME(msg.author) + ": " + msgv
