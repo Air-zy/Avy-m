@@ -75,28 +75,18 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
 
 //
 
-const tokenizer = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.js');
-
-let _tokenizerReady = false;
-
-function getTokenizer() {
-    if (!_tokenizerReady) {
-        _tokenizerReady = true;
-    }
-    return tokenizer;
-}
+const { llama3Tokenizer } = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.js');
 
 async function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
-    const tok = getTokenizer();
     const counts = new Map();
 
     for (const msg of history) {
         if (msg.role !== 'assistant') continue;
 
-        const ids = tok.encode(msg.content, { bos: false, eos: false });
+        const ids = llama3Tokenizer.encode(msg.content, { bos: false, eos: false });
 
         for (const id of ids) {
-            const piece = tok.decode([id], false, false);
+            const piece = llama3Tokenizer.decode([id], false, false);
             if (!piece) continue;
             counts.set(piece, (counts.get(piece) ?? 0) + 1);
         }
