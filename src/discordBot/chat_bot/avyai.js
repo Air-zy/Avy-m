@@ -76,9 +76,9 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
 //
 
 const { llama3Tokenizer } = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.js');
-console.log("[TEST] llama3Tokenizer, llama3Tokenizer.encode");
 
-async function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
+function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
+    console.log("Building logit bias from history...", llama3Tokenizer.decode, llama3Tokenizer.encode);
     const counts = new Map();
 
     for (const msg of history) {
@@ -87,7 +87,7 @@ async function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
         const ids = llama3Tokenizer.encode(msg.content, { bos: false, eos: false });
 
         for (const id of ids) {
-            const piece = llama3Tokenizer.decode([id], false, false);
+            const piece = llama3Tokenizer.decode([id]);
             if (!piece) continue;
             counts.set(piece, (counts.get(piece) ?? 0) + 1);
         }
@@ -100,6 +100,20 @@ async function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
     }
 
     return logit_bias;
+}
+
+function buildInputData(history) {
+    return {
+        messages: history,
+        max_tokens: 512,
+        temperature: 1,
+        top_p: 0.9,
+        top_k: 40,
+        min_p: 0.05,
+        presence_penalty: 4,
+        seed: Math.floor(Math.random() * 65536),
+        logit_bias: buildLogitBiasFromHistory(history)
+    };
 }
 
 function buildInputData(history) {
