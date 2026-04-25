@@ -71,8 +71,48 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
         isGenerating = false;
     }
 }
+
+
+//
+
+const tokenizer = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.js');
+
+let _tokenizerReady = false;
+
+function getTokenizer() {
+    if (!_tokenizerReady) {
+        _tokenizerReady = true;
+    }
+    return tokenizer;
+}
+
+async function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
+    const tok = getTokenizer();
+    const counts = new Map();
+
+    for (const msg of history) {
+        if (msg.role !== 'assistant') continue;
+
+        const ids = tok.encode(msg.content, { bos: false, eos: false });
+
+        for (const id of ids) {
+            const piece = tok.decode([id], false, false);
+            if (!piece) continue;
+            counts.set(piece, (counts.get(piece) ?? 0) + 1);
+        }
+    }
+
+    const logit_bias = {};
+    for (const [piece, count] of counts) {
+        if (count < minCount) continue;
+        logit_bias[piece] = bias;
+    }
+
+    return logit_bias;
+}
+
 function buildInputData(history) {
-    return {
+    return buildLogitBiasFromHistory(history).then(logit_bias => ({
         messages: history,
         max_tokens: 512,
         temperature: 1,
@@ -80,8 +120,9 @@ function buildInputData(history) {
         top_k: 40,
         min_p: 0.05,
         presence_penalty: 4,
-        seed: Math.floor(Math.random() * 65536)
-    }
+        seed: Math.floor(Math.random() * 65536),
+        logit_bias
+    }));
 }
 
 const sysprompt = "ur a discord girl named avy whos witty explicit, repond as \"avy:\" use few word";
