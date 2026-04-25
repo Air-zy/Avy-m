@@ -81,27 +81,29 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
 const llama3TokenizerMODULE = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.cjs');
 const llama3Tokenizer = llama3TokenizerMODULE.llama3Tokenizer;
 
-function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
-    const counts = new Map();
+function buildLogitBiasFromHistory(history, bias = -1) {
+    const window = 5;
+    const seen = new Map();
 
     for (const msg of history) {
         if (msg.role !== 'assistant') continue;
 
         const ids = llama3Tokenizer.encode(msg.content, { bos: false, eos: false });
 
-        for (const id of ids) {
-            const piece = llama3Tokenizer.decode([id]);
-            if (!piece) continue;
-            counts.set(piece, (counts.get(piece) ?? 0) + 1);
+        for (let i = 0; i <= ids.length - window; i++) {
+            const key = ids.slice(i, i + window).join(',');
+            seen.set(key, (seen.get(key) ?? 0) + 1);
         }
     }
 
     const logit_bias = {};
-    for (const [piece, count] of counts) {
-        if (count < minCount) continue;
-        //logit_bias[piece] = bias;
-        const maxStrength = -20; // clamp
-        logit_bias[piece] = Math.max(bias * count, maxStrength);
+
+    for (const [key, count] of seen) {
+        if (count < 2) continue;
+
+        for (const id of key.split(',').map(Number)) {
+            logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias, -20);
+        }
     }
 
     console.log(logit_bias);
