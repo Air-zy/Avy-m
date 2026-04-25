@@ -104,6 +104,7 @@ function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
         logit_bias[piece] = Math.max(bias * count, maxStrength);
     }
 
+    console.log(logit_bias);
     return logit_bias;
 }
 
