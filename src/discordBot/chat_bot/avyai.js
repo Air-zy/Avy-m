@@ -77,12 +77,8 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
 
 const llama3TokenizerMODULE = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.cjs');
 const llama3Tokenizer = llama3TokenizerMODULE.llama3Tokenizer;
-console.log("[TEST] llama3Tokenizer:", llama3Tokenizer);
 
 function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
-    console.log("Building logit bias from history...", llama3Tokenizer);
-    console.log(llama3Tokenizer.encode)
-    console.log(llama3Tokenizer.decode)
     const counts = new Map();
 
     for (const msg of history) {
@@ -100,7 +96,9 @@ function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
     const logit_bias = {};
     for (const [piece, count] of counts) {
         if (count < minCount) continue;
-        logit_bias[piece] = bias;
+        //logit_bias[piece] = bias;
+        const maxStrength = -90; // clamp
+        logit_bias[piece] = Math.max(bias * count, maxStrength);
     }
 
     return logit_bias;
