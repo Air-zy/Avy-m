@@ -76,6 +76,7 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
 //
 
 const { llama3Tokenizer } = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.js');
+console.log("[TEST] llama3Tokenizer, llama3Tokenizer.encode");
 
 async function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
     const counts = new Map();
