@@ -106,7 +106,7 @@ function buildLogitBiasFromHistory(history, bias = -1) {
         }
     }
 
-    //console.log(logit_bias);
+    console.log(logit_bias);
     return logit_bias;
 }
 
