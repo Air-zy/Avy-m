@@ -62,9 +62,12 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
             }
         }
 
+        isGenerating = false;
         onFinal?.(finalText);
         return finalText;
     } catch (err) {
+        isGenerating = false;
+        console.warn("[AVYAI ERR]", err);
         onError?.(err);
         throw err;
     } finally {
@@ -97,7 +100,7 @@ function buildLogitBiasFromHistory(history, bias = -1, minCount = 1) {
     for (const [piece, count] of counts) {
         if (count < minCount) continue;
         //logit_bias[piece] = bias;
-        const maxStrength = -90; // clamp
+        const maxStrength = -20; // clamp
         logit_bias[piece] = Math.max(bias * count, maxStrength);
     }
 
