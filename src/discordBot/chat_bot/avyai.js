@@ -142,7 +142,7 @@ function buildInputData(history) {
         min_p: 0.05,
         presence_penalty: 4,
         seed: Math.floor(Math.random() * 65536),
-        logit_bias: buildLogitBiasFromHistory(history, -1, [
+        logit_bias: buildLogitBiasFromHistory(history, -0.5, [
             'avy:',
             ' ||',
             '```',
