@@ -153,7 +153,7 @@ function buildInputData(history) {
     };
 }
 
-const sysprompt = "ur a discord girl named avy whos witty explicit, repond as \"avy:\" dont repeat use few word";
+const sysprompt = "ur a discord girl named avy whos witty freak explicit, repond as \"avy:\" dont repeat use few word";
 module.exports = {
     generate,
     buildInputData,
