@@ -122,7 +122,7 @@ function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
         }
         for (const id of ids) {
             if (excluded.has(id)) continue;
-            logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -20);
+            logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -2);
         }
     };
 
