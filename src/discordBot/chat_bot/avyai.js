@@ -91,22 +91,26 @@ function buildLogitBiasFromHistory(history, bias = -1) {
         const ids = llama3Tokenizer.encode(msg.content, { bos: false, eos: false });
 
         for (let i = 0; i <= ids.length - window; i++) {
-            const key = ids.slice(i, i + window).join(',');
-            seen.set(key, (seen.get(key) ?? 0) + 1);
+            const ngram = ids.slice(i, i + window);
+            const key = ngram.join(','); // still need a map key, but isolating the ugliness here
+            if (!seen.has(key)) seen.set(key, { ids: ngram, count: 0 });
+            seen.get(key).count++;
         }
     }
 
     const logit_bias = {};
 
-    for (const [key, count] of seen) {
+    for (const { ids, count } of seen.values()) {
         if (count < 2) continue;
 
-        for (const id of key.split(',').map(Number)) {
+        const text = llama3Tokenizer.decode(ids);
+        console.log(`[logit_bias] punishing ngram (x${count}): "${text}"`);
+
+        for (const id of ids) {
             logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias, -20);
         }
     }
 
-    //console.log(logit_bias);
     return logit_bias;
 }
 
@@ -119,8 +123,8 @@ function buildInputData(history) {
         top_k: 40,
         min_p: 0.05,
         presence_penalty: 4,
-        seed: Math.floor(Math.random() * 65536)
-        //logit_bias: buildLogitBiasFromHistory(history)
+        seed: Math.floor(Math.random() * 65536),
+        logit_bias: buildLogitBiasFromHistory(history)
     };
 }
 
