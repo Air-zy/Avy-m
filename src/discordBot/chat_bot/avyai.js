@@ -115,9 +115,11 @@ function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
     const logit_bias = {};
 
     const punish = ({ ids, count }, label) => {
-        if (count < 3) return;
+        if (count < 2) return;
         const text = llama3Tokenizer.decode(ids);
-        console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
+        if (count > 2) {
+            console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
+        }
         for (const id of ids) {
             if (excluded.has(id)) continue;
             logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -20);
