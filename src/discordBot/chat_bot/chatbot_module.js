@@ -262,44 +262,11 @@ async function respond_process(message, history) {
 
 const { imgUrlToText } = require('./imgURLToTxt.js');
 
-const USER_PROFILE_CACHE_MAX = 10;
-const userProfileCache = new Map(); // userId -> { globalName, banner, accentColor, flags, cachedAt }
-
-async function fetchAndCacheUserProfile(user) {
-    if (userProfileCache.has(user.id)) {
-        const entry = userProfileCache.get(user.id);
-        userProfileCache.delete(user.id);
-        userProfileCache.set(user.id, entry); // bump to end (LRU)
-        return entry;
-    }
-
-    try {
-        const fetched = await client.users.fetch(user.id, { force: true });
-        const profile = {
-            globalName: fetched.globalName ?? null,
-            banner: fetched.banner ?? null,
-            accentColor: fetched.hexAccentColor ?? null,
-            flags: fetched.flags?.toArray() ?? [],
-        };
-
-        if (userProfileCache.size >= USER_PROFILE_CACHE_MAX) {
-            userProfileCache.delete(userProfileCache.keys().next().value);
-        }
-
-        userProfileCache.set(user.id, profile);
-        return profile;
-    } catch {
-        return null;
-    }
-}
-
 async function build_history(message) {
     const msgChannel = message.channel;
     const msgGuild = message.guild;
     const msgMember = message.member;
     const msgAuthor = message.author;
-
-    const profilePromise = fetchAndCacheUserProfile(msgAuthor);
 
     let systemMessage = {
         role: "system",
@@ -307,23 +274,15 @@ async function build_history(message) {
     };
 
     const now = new Date();
-    const profile = await profilePromise;
-    console.log(`[User Profile]`, profile)
-
     const envParts = [
         `channel: #${msgChannel.name ?? "dm"}`,
-        msgGuild ? `server: "${msgGuild.name}"` : `context: DM`,
+        msgGuild ? `server: "${msgGuild.name}"` : null,
         msgGuild ? `members: ${msgGuild.memberCount}` : null,
         `user: ${msgAuthor.username}`,
-        profile?.globalName && profile.globalName !== msgAuthor.username
-            ? `display name: "${profile.globalName}"`
-            : null,
         msgMember?.nickname ? `nickname: "${msgMember.nickname}"` : null,
         msgMember && msgMember.roles.highest.name !== "@everyone"
             ? `top role: ${msgMember.roles.highest.name}`
             : null,
-        profile?.flags?.length ? `badges: ${profile.flags.join(", ")}` : null,
-        profile?.accentColor ? `accent: ${profile.accentColor}` : null,
         msgMember?.presence
             ? `presence: ${msgMember.presence.status}${msgMember.presence.activities?.length
                 ? `; activities=${msgMember.presence.activities.map(a => a.name).join("|")}`
@@ -333,7 +292,7 @@ async function build_history(message) {
         msgChannel.isThread() ? `thread: "${msgChannel.name}"` : null,
         message.reference ? `is_reply: true` : null,
         message.mentions.has(client.user) ? `was_pinged: true` : null,
-        `dateNow: ${now.toUTCString()}`,
+        `date: ${now.toUTCString()}`,
     ].filter(Boolean).join(", ");
 
     const msgEnvData = {
