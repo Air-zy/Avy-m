@@ -283,11 +283,13 @@ async function build_history(message) {
         msgMember && msgMember.roles.highest.name !== "@everyone"
             ? `top role: ${msgMember.roles.highest.name}`
             : null,
+        msgMember?.presence
+            ? `presence: ${msgMember.presence.status}; activities=${msgMember.presence.activities?.map(a => a.name).join("|") || "none"}`
+            : null,
         msgChannel.isThread() ? `thread: "${msgChannel.name}"` : null,
         message.reference ? `is_reply: true` : null,
         message.mentions.has(client.user) ? `was_pinged: true` : null,
-        `time: ${now.toUTCString()}`,
-        `day: ${now.toLocaleDateString("en", { weekday: "long" })}`,
+        `dateNow: ${now.toUTCString()}`,
     ].filter(Boolean).join(", ");
 
     const msgEnvData = {
