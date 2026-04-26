@@ -280,7 +280,7 @@ async function build_history(message) {
         msgGuild ? `members: ${msgGuild.memberCount}` : null,
         `user: ${msgAuthor.username}`,
         msgMember?.nickname ? `nickname: "${msgMember.nickname}"` : null,
-        msgMember?.roles.highest.name !== "@everyone"
+        msgMember && msgMember.roles.highest.name !== "@everyone"
             ? `top role: ${msgMember.roles.highest.name}`
             : null,
         msgChannel.isThread() ? `thread: "${msgChannel.name}"` : null,
@@ -389,10 +389,10 @@ async function build_history(message) {
 
             if (
                 (lmsgv.includes("who") || lmsgv.includes("which") || lmsgv.includes("did") ||
-                 lmsgv.includes("he") || lmsgv.includes("she") || lmsgv.includes("what")) &&
+                    lmsgv.includes("he") || lmsgv.includes("she") || lmsgv.includes("what")) &&
                 (lmsgv.includes("creator") || lmsgv.includes("made you") || lmsgv.includes("created you") ||
-                 lmsgv.includes("made u") || lmsgv.includes("created u") || lmsgv.includes("made avy") ||
-                 lmsgv.includes("created avy") || lmsgv.includes("is air")) &&
+                    lmsgv.includes("made u") || lmsgv.includes("created u") || lmsgv.includes("made avy") ||
+                    lmsgv.includes("created avy") || lmsgv.includes("is air")) &&
                 msgCount > 13
             ) {
                 if (systemMessage.content === sysprompt) {
