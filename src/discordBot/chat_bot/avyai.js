@@ -81,10 +81,14 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
 const llama3TokenizerMODULE = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.cjs');
 const llama3Tokenizer = llama3TokenizerMODULE.llama3Tokenizer;
 
-function buildLogitBiasFromHistory(history, bias = -1) {
+function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
     const window = 5;
     const ngramSeen = new Map();
     const msgSeen   = new Map();
+
+    const excluded = new Set(
+        exclude.flatMap(s => llama3Tokenizer.encode(s, { bos: false, eos: false }))
+    );
 
     for (const msg of history) {
         if (msg.role !== 'assistant') continue;
@@ -111,10 +115,11 @@ function buildLogitBiasFromHistory(history, bias = -1) {
     const logit_bias = {};
 
     const punish = ({ ids, count }, label) => {
-        if (count < 2) return;
+        if (count < 3) return;
         const text = llama3Tokenizer.decode(ids);
         console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
         for (const id of ids) {
+            if (excluded.has(id)) continue;
             logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -20);
         }
     };
@@ -135,7 +140,12 @@ function buildInputData(history) {
         min_p: 0.05,
         presence_penalty: 4,
         seed: Math.floor(Math.random() * 65536),
-        logit_bias: buildLogitBiasFromHistory(history)
+        logit_bias: buildLogitBiasFromHistory(history, -1, [
+            'avy:',
+            ' ||',
+            '```',
+            ' ```'
+        ])
     };
 }
 
