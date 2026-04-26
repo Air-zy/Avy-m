@@ -106,7 +106,7 @@ function buildLogitBiasFromHistory(history, bias = -1) {
         }
     }
 
-    console.log(logit_bias);
+    //console.log(logit_bias);
     return logit_bias;
 }
 
@@ -118,13 +118,13 @@ function buildInputData(history) {
         top_p: 0.9,
         top_k: 40,
         min_p: 0.05,
-        presence_penalty: 2,
-        seed: Math.floor(Math.random() * 65536),
-        logit_bias: buildLogitBiasFromHistory(history)
+        presence_penalty: 4,
+        seed: Math.floor(Math.random() * 65536)
+        //logit_bias: buildLogitBiasFromHistory(history)
     };
 }
 
-const sysprompt = "ur a discord girl named avy whos witty explicit, repond as \"avy:\" use few word";
+const sysprompt = "ur a discord girl named avy whos witty explicit, repond as \"avy:\" dont repeat use few word";
 module.exports = {
     generate,
     buildInputData,
