@@ -83,33 +83,44 @@ const llama3Tokenizer = llama3TokenizerMODULE.llama3Tokenizer;
 
 function buildLogitBiasFromHistory(history, bias = -1) {
     const window = 5;
-    const seen = new Map();
+    const ngramSeen = new Map();
+    const msgSeen   = new Map();
 
     for (const msg of history) {
         if (msg.role !== 'assistant') continue;
 
         const ids = llama3Tokenizer.encode(msg.content, { bos: false, eos: false });
 
-        for (let i = 0; i <= ids.length - window; i++) {
-            const ngram = ids.slice(i, i + window);
-            const key = ngram.join(','); // still need a map key, but isolating the ugliness here
-            if (!seen.has(key)) seen.set(key, { ids: ngram, count: 0 });
-            seen.get(key).count++;
+        if (ids.length < window) {
+            const key = ids.join(',');
+            if (!msgSeen.has(key)) msgSeen.set(key, { ids, count: 0 });
+            msgSeen.get(key).count++;
+        } else {
+            const seenThisTurn = new Set();
+            for (let i = 0; i <= ids.length - window; i++) {
+                const ngram = ids.slice(i, i + window);
+                const key   = ngram.join(',');
+                if (seenThisTurn.has(key)) continue;
+                seenThisTurn.add(key);
+                if (!ngramSeen.has(key)) ngramSeen.set(key, { ids: ngram, count: 0 });
+                ngramSeen.get(key).count++;
+            }
         }
     }
 
     const logit_bias = {};
 
-    for (const { ids, count } of seen.values()) {
-        if (count < 2) continue;
-
+    const punish = ({ ids, count }, label) => {
+        if (count < 2) return;
         const text = llama3Tokenizer.decode(ids);
-        console.log(`[logit_bias] punishing ngram (x${count}): "${text}"`);
-
+        console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
         for (const id of ids) {
-            logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias, -20);
+            logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -20);
         }
-    }
+    };
+
+    for (const entry of msgSeen.values())   punish(entry, 'short msg');
+    for (const entry of ngramSeen.values()) punish(entry, 'ngram');
 
     return logit_bias;
 }
