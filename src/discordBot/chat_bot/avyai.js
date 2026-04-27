@@ -153,9 +153,14 @@ function buildInputData(history) {
     };
 }
 
+function isCurrentlyGenerating() {
+    return isGenerating;
+}
+
 const sysprompt = "ur a discord girl named avy whos witty freak explicit, repond as \"avy:\" dont repeat use few word";
 module.exports = {
     generate,
     buildInputData,
-    sysprompt
+    sysprompt,
+    isCurrentlyGenerating
 };

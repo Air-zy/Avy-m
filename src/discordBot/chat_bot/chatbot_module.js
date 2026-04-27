@@ -65,9 +65,13 @@ function filterSentText(text) {
 }
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
-const { generate, buildInputData, sysprompt } = require('./avyai.js');
+const { generate, buildInputData, sysprompt, isCurrentlyGenerating } = require('./avyai.js');
 
 async function respond_process(message, history) {
+    if (isCurrentlyGenerating()) {
+        return
+    }
+
     const mChannel = message.channel;
     const msgUserName = filterOPENAINAME(message.author);
 
