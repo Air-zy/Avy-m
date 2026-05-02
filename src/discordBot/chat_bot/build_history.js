@@ -58,7 +58,6 @@ async function build_history(message, client) {
     let totalMsgs = 0;
     let previousTimeStamp = message.createdTimestamp;
 
-    let spamCount = 0;
     let prevMsgIsDayOld = false;
     let drawPrompt = false;
 
@@ -69,10 +68,6 @@ async function build_history(message, client) {
 
         if (totalMsgs == 2 && spamdelta_ms > TWENTY_FOUR_HOURS_MS) {
             prevMsgIsDayOld = true;
-        }
-
-        if (spamdelta_ms < 1000 && msg.author.id != client.user.id) {
-            spamCount += (1000 - spamdelta_ms) / (1 + totalMsgs / 2);
         }
 
         if (msg.embeds.length > 0) {
@@ -197,10 +192,6 @@ async function build_history(message, client) {
             }
         }
     });
-
-    if (spamCount > 2000) {
-        systemMessage.content += ", user spams. annoyed say bye";
-    }
 
     if (prevMsgIsDayOld) {
         systemMessage.content += ". its been days since user has talked with you. send a weird re-connection text";
