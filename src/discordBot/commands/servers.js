@@ -9,6 +9,7 @@ module.exports = {
     const lines = [];
     const owners = new Map();
 
+    console.log("server count:", guilds.size)
     for (const [, partialGuild] of guilds) {
       const guild = await partialGuild.fetch();
 
