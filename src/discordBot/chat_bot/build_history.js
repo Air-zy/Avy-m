@@ -205,6 +205,7 @@ async function build_history(message, client) {
         console.log("[DIFF SYS PROMPT]: ", systemMessage.content);
     }
 
+    console.log(history)
     return history;
 }
 

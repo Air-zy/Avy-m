@@ -29,9 +29,9 @@ client.on('ready', async () => {
 
   await client.user.setPresence({
     activities: [{
-      name: "new engine c test", // The name of the activity
+      name: "new engine d test", // The name of the activity
       type: 4, // https://discord.js.org/docs/packages/discord-api-types/0.38.43/v10/ActivityType:Enum
-      state: "new engine c test",
+      state: "new engine d test",
     }],
     //status: 'online'
     // online

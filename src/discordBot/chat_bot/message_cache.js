@@ -1,4 +1,5 @@
 const MAX_CACHE_BYTES = 10 * 1024 * 1024; // 10MB
+const MAX_MESSAGES = 200;
 
 const cache = new Map();
 let totalBytes = 0;
@@ -9,15 +10,16 @@ function estimateBytes(messages) {
 
 function evict() {
     while (totalBytes > MAX_CACHE_BYTES && cache.size > 0) {
-        let oldestId, oldestEntry, oldestTime = Infinity;
+        let oldestId = null;
+        let oldestTime = Infinity;
         for (const [id, entry] of cache) {
             if (entry.lastAccess < oldestTime) {
                 oldestTime = entry.lastAccess;
                 oldestId = id;
-                oldestEntry = entry;
             }
         }
-        totalBytes -= oldestEntry.byteSize;
+        if (oldestId === null) break;
+        totalBytes -= cache.get(oldestId).byteSize;
         cache.delete(oldestId);
     }
 }
@@ -29,12 +31,11 @@ async function getMessages(channel) {
 
     if (!entry) {
         const fetched = await channel.messages.fetch({ limit: 100, cache: true });
-        const messages = [...fetched.values()]; // newest first
+        const messages = [...fetched.values()]; // newest-first
         const byteSize = estimateBytes(messages);
-        const newestId = messages[0]?.id ?? null;
 
         totalBytes += byteSize;
-        cache.set(id, { messages, newestId, byteSize, lastAccess: now });
+        cache.set(id, { messages, newestId: messages[0]?.id ?? null, byteSize, lastAccess: now });
         evict();
         return messages;
     }
@@ -43,21 +44,22 @@ async function getMessages(channel) {
 
     if (!entry.newestId) return entry.messages;
 
-    const delta = await channel.messages.fetch({ limit: 100, after: entry.newestId, cache: true });
-
+    const delta = await channel.messages.fetch({ after: entry.newestId, limit: 100, cache: true });
     if (delta.size === 0) return entry.messages;
 
-    const newMessages = [...delta.values()].reverse();
-    const merged = [...entry.messages, ...newMessages].slice(0, 200).reverse();
+    const newMessages = [...delta.values()];
 
-    const deltaBytes = estimateBytes(newMessages);
-    const trimCount = (entry.messages.length + newMessages.length) - merged.length;
-    const trimmedBytes = trimCount > 0 ? estimateBytes(newMessages.slice(-trimCount)) : 0;
-    const newByteSize = entry.byteSize + deltaBytes - trimmedBytes;
+    const combined = [...newMessages, ...entry.messages]
+        .sort((a, b) => (BigInt(b.id) > BigInt(a.id) ? 1 : -1)); // newest-first
 
-    totalBytes -= entry.byteSize;
-    totalBytes += newByteSize;
+    const merged = combined.slice(0, MAX_MESSAGES);
 
+    // Trimmed messages fall off the tail (oldest), which came from entry.messages
+    const trimCount = combined.length - merged.length;
+    const trimmedBytes = trimCount > 0 ? estimateBytes(combined.slice(-trimCount)) : 0;
+    const newByteSize = entry.byteSize + estimateBytes(newMessages) - trimmedBytes;
+
+    totalBytes = totalBytes - entry.byteSize + newByteSize;
     entry.messages = merged;
     entry.newestId = newMessages[0].id;
     entry.byteSize = newByteSize;
