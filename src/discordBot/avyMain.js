@@ -69,12 +69,12 @@ client.on('interactionCreate', async (interaction) => {
     try {
       if (error && error.stack && error.message) {
         if (interaction.deferred || interaction.replied) {
-          await interaction.editReply("```js\nCMD err: " + err + '```');
+          await interaction.editReply("```js\nCMD err: " + error + '```');
         } else {
-          await interaction.reply("```js\nCMD err: " + err + '```');
+          await interaction.reply("```js\nCMD err: " + error + '```');
         }
       } else {
-        await interaction.reply("```js\nCMD err: " + err + '```')
+        await interaction.reply("```js\nCMD err: " + error + '```')
       }
     } catch (err2) {
       console.log('\n[DISCORD INTER ERROR] ', error)
@@ -115,7 +115,6 @@ client.on('guildCreate', async (guild) => {
 });
 
 //
-
 
 const onMsgCreate = require('./onMsgCreate.js')
 client.on("messageCreate", (message) => onMsgCreate(client, message));

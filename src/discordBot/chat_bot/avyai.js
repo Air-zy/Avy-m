@@ -73,8 +73,6 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
     } finally {
         isGenerating = false;
     }
-
-    isGenerating = false
 }
 
 
