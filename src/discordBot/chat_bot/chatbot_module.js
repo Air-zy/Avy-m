@@ -21,7 +21,7 @@ async function handle_chat(message) {
 
     try {
         const history = await build_history(message, client);
-        console.log(history)
+        //console.log(history)
         await respond_process(message, history, client);
     } catch (err) {
         console.log("[CHAT ERROR] ", err);

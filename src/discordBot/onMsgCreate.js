@@ -54,7 +54,7 @@ module.exports = async (client, message) => {
   }
   userTimeouts.set(message.author.id, true);
 
-  if (message.channel.type === 1){
+  if (message.channel.type === 1 && message.author.id != client.user.id){
     console.log(`\n(${message.channel.id})(dm) ${message.author.username}: ${message.content}`); 
   }
 

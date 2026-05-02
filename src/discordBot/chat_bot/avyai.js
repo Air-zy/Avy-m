@@ -63,6 +63,7 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
         }
 
         isGenerating = false;
+        console.log("avy:", finalText)
         onFinal?.(finalText);
         return finalText;
     } catch (err) {
@@ -117,9 +118,9 @@ function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
     const punish = ({ ids, count }, label) => {
         if (count < 2) return;
         const text = llama3Tokenizer.decode(ids);
-        if (count > 2) {
+        /*if (count > 2) {
             console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
-        }
+        }*/
         for (const id of ids) {
             if (excluded.has(id)) continue;
             logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -2);
