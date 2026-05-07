@@ -20,20 +20,6 @@
     ]
   },
   {
-    "name": "media",
-    "description": "searches for short form media",
-    "integration_types": [0, 1],
-    "contexts": [0, 1, 2],
-    "options": [
-      {
-        "name": "search",
-        "description": "what to search",
-        "type": 3,
-        "required": true
-      }
-    ]
-  },
-  {
     "name": "draw",
     "description": "generate ai img",
     "integration_types": [0, 1],
