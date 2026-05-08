@@ -1,6 +1,6 @@
 const { sysprompt } = require('./avyai.js');
 const { imgUrlToText } = require('./imgURLToTxt.js');
-const { filterOPENAINAME, messageContentFilter } = require('./helpers.js');
+const { filterDiscordName, messageContentFilter } = require('./helpers.js');
 const { getMessages } = require('./message_cache.js');
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
@@ -44,7 +44,7 @@ async function build_history(message, client) {
         content: `[SYSTEM]: ${envParts}`
     };
 
-    console.log(msgEnvData);
+    console.log(envParts);
 
     const history = [
         systemMessage,
@@ -103,7 +103,7 @@ async function build_history(message, client) {
     prevmessages.forEach((msg) => {
         msgCount += 1;
 
-        const speakerName = filterOPENAINAME(msg.author);
+        const speakerName = filterDiscordName(msg.author);
         let msgv = messageContentFilter(msg, client)
             .substring(0, 512)
             .replace(/ {2,}/g, ' ');
@@ -186,7 +186,7 @@ async function build_history(message, client) {
                     rememberNext = !rememberNext;
                     history.splice(1, 0, {
                         role: 'user',
-                        content: "[old msg] " + filterOPENAINAME(msg.author) + ": " + messageContentFilter(msg, client).substring(0, 512).replace(/ {2,}/g, ' ')
+                        content: "[old msg] " + filterDiscordName(msg.author) + ": " + messageContentFilter(msg, client).substring(0, 512).replace(/ {2,}/g, ' ')
                     });
                 }
             }
@@ -205,7 +205,7 @@ async function build_history(message, client) {
         console.log("[DIFF SYS PROMPT]: ", systemMessage.content);
     }
 
-    console.log(history)
+    //console.log(history)
     return history;
 }
 

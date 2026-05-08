@@ -113,12 +113,21 @@ function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
         }
     }
 
-    const logit_bias = {};
+    const logit_bias = {
+        "353": 1, // ( *)
+        "75912": -10, // ( anon)
+        "8271": -2, // ( brain)
+        "39897": -4, // ( spill)
+        "15600": -4, // ( tea)
+        "39497": -4, // ( slut)
+        "1131": 2, // (...)
+        "55375": 2, // ( ```)
+    };
 
     const punish = ({ ids, count }, label) => {
         if (count < 2) return;
-        const text = llama3Tokenizer.decode(ids);
         /*if (count > 2) {
+            const text = llama3Tokenizer.decode(ids);
             console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
         }*/
         for (const id of ids) {

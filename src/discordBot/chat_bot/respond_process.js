@@ -4,11 +4,11 @@ const imgnamewatermark = configData[0].img_name_stamp;
 
 const animodule = require("../anigen.js");
 const { generate, buildInputData } = require('./avyai.js');
-const { filterOPENAINAME, filterSentText } = require('./helpers.js');
+const { filterDiscordName, filterSentText } = require('./helpers.js');
 
 async function respond_process(message, history, client) {
     const mChannel = message.channel;
-    const msgUserName = filterOPENAINAME(message.author);
+    const msgUserName = filterDiscordName(message.author);
 
     await mChannel.sendTyping?.();
 
