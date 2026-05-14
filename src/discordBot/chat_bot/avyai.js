@@ -115,13 +115,22 @@ function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
 
     const logit_bias = {
         "353": 1, // ( *)
+        "1501": -2, // ( show)
         "75912": -10, // ( anon)
-        "8271": -2, // ( brain)
+        "8271": -4, // ( brain)
         "39897": -4, // ( spill)
         "15600": -4, // ( tea)
+        "47715": -2, // ( sip)
         "39497": -4, // ( slut)
+        "4860": -4, // ( questions)
+        "3488": -2, // ( question)
         "1131": 2, // (...)
         "55375": 2, // ( ```)
+        "602": 1, // ( i)
+        "1448": 1, // ( fr)
+        "56939": 1, // ( rn)
+        "8136": 1, // ( af)
+        "813": 1, // ( his)
     };
 
     const punish = ({ ids, count }, label) => {

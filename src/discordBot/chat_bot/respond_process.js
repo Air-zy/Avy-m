@@ -10,8 +10,6 @@ async function respond_process(message, history, client) {
     const mChannel = message.channel;
     const msgUserName = filterDiscordName(message.author);
 
-    await mChannel.sendTyping?.();
-
     const inputData = buildInputData(history);
 
     let raw = "";
@@ -138,8 +136,13 @@ async function respond_process(message, history, client) {
         }
     };
 
+    let needSendTyping = true;
     await generate(inputData, {
         onDelta: (chunk) => {
+            if (needSendTyping) {;
+                needSendTyping = false;
+                mChannel.sendTyping?.().catch(console.error);
+            }
             raw += chunk;
 
             const parsed = extractDraw(raw);
@@ -200,6 +203,18 @@ async function respond_process(message, history, client) {
                 }
             }
         },
+
+        onError: async (err) => {
+            const status =
+                err?.status ||
+                err?.statusCode ||
+                err?.response?.status ||
+                "???";
+
+            await mChannel.send({
+                content: `error :( (${status})`
+            });
+        }
     });
 }
 
