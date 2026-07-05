@@ -155,11 +155,12 @@ function buildInputData(history) {
     return {
         messages: history,
         max_tokens: 512,
-        temperature: 1,
+        temperature: 0.9,
         top_p: 0.9,
         top_k: 40,
-        min_p: 0.05,
+        min_p: 0.08,
         presence_penalty: 4,
+        repeat_penalty: 1.2,
         seed: Math.floor(Math.random() * 65536),
         logit_bias: buildLogitBiasFromHistory(history, -0.5, [
             'avy:',
