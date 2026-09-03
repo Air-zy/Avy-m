@@ -5,51 +5,55 @@ const { getMessages } = require('./message_cache.js');
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
 
-async function build_history(message, client) {
+// Backs the `self_info` tool. This used to be a `[SYSTEM]: ...` line prepended at
+// history index 1, but it carries a to-the-minute timestamp, so it changed on nearly
+// every message and invalidated the cached prefix behind it. Measured against the live
+// server with a ~7K-token history: same minute prompt_n=6 / 171ms, next minute
+// prompt_n=7122 / 3070ms. As a tool result it sits at the end, only when asked for.
+function buildEnvInfo(message) {
     const msgChannel = message.channel;
     const msgGuild = message.guild;
     const msgMember = message.member;
-    const msgAuthor = message.author;
+    const now = new Date();
+
+    const info = {
+        my_creator: "airzy",
+        channel: msgChannel.name ?? "dm",
+        server: msgGuild?.name,
+        members: msgGuild?.memberCount,
+        user: message.author.username,
+        nickname: msgMember?.nickname,
+        top_role: msgMember && msgMember.roles.highest.name !== "@everyone"
+            ? msgMember.roles.highest.name
+            : undefined,
+        presence: msgMember?.presence
+            ? `${msgMember.presence.status}${msgMember.presence.activities?.length
+                ? `; activities=${msgMember.presence.activities.map(a => a.name).join("|")}`
+                : ""}`
+            : undefined,
+        user_member_for_days: msgMember?.joinedTimestamp
+            ? Math.floor((now - msgMember.joinedTimestamp) / TWENTY_FOUR_HOURS_MS)
+            : undefined,
+        thread: msgChannel.isThread() ? msgChannel.name : undefined,
+        date: now.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric",
+            hour: "numeric", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" })
+    };
+
+    for (const k of Object.keys(info)) if (info[k] === undefined) delete info[k];
+    return info;
+}
+
+async function build_history(message, client) {
+    const msgChannel = message.channel;
 
     let systemMessage = {
         role: "system",
         content: sysprompt
     };
 
-    const now = new Date();
-    const envParts = [
-        `channel: #${msgChannel.name ?? "dm"}`,
-        msgGuild ? `server: "${msgGuild.name}"` : null,
-        msgGuild ? `members: ${msgGuild.memberCount}` : null,
-        `user: ${msgAuthor.username}`,
-        msgMember?.nickname ? `nickname: "${msgMember.nickname}"` : null,
-        msgMember && msgMember.roles.highest.name !== "@everyone"
-            ? `top role: ${msgMember.roles.highest.name}`
-            : null,
-        msgMember?.presence
-            ? `presence: ${msgMember.presence.status}${msgMember.presence.activities?.length
-                ? `; activities=${msgMember.presence.activities.map(a => a.name).join("|")}`
-                : ""
-            }`
-            : null,
-        msgMember?.joinedTimestamp
-            ? `^ user was server member for: ${Math.floor((now - msgMember.joinedTimestamp) / 86400000)}d`
-            : null,
-        msgChannel.isThread() ? `thread: "${msgChannel.name}"` : null,
-        `date: ${now.toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" })}`
-    ].filter(Boolean).join(", ");
-
-    const msgEnvData = {
-        role: "user",
-        content: `[SYSTEM]: ${envParts}`
-    };
-
-    console.log(envParts);
-
-    const history = [
-        systemMessage,
-        msgEnvData
-    ];
+    // Channel/user/time context is no longer prepended here; the model pulls it through
+    // the `self_info` tool when it actually needs it. See buildEnvInfo above.
+    const history = [systemMessage];
 
     let prevmessagesALL = await getMessages(msgChannel); // newest first, up to 100
     let prevmessages = prevmessagesALL.slice(0, 80);
@@ -59,7 +63,6 @@ async function build_history(message, client) {
     let previousTimeStamp = message.createdTimestamp;
 
     let prevMsgIsDayOld = false;
-    let drawPrompt = false;
 
     prevmessages.forEach((msg) => {
         const spamdelta_ms = previousTimeStamp - msg.createdTimestamp;
@@ -108,12 +111,10 @@ async function build_history(message, client) {
             .substring(0, 512)
             .replace(/ {2,}/g, ' ');
 
-        const lmsgv = msgv.toLowerCase();
-
         if (msg.author.id === client.user.id) {
             if (msg.attachments.size > 0) {
                 msg.attachments.forEach((mattach) => {
-                    msgv += ` draw{${mattach.name.replace(/_/gi, " ")}}`;
+                    msgv += ` (sent image){${mattach.name.replace(/_/gi, " ")}}`;
                 });
             }
 
@@ -126,26 +127,6 @@ async function build_history(message, client) {
             }
 
             pushMergedHistory("user", speakerName, msgv);
-
-            if (
-                (lmsgv.includes("who") || lmsgv.includes("which") || lmsgv.includes("did") ||
-                    lmsgv.includes("he") || lmsgv.includes("she") || lmsgv.includes("what")) &&
-                (lmsgv.includes("creator") || lmsgv.includes("made you") || lmsgv.includes("created you") ||
-                    lmsgv.includes("made u") || lmsgv.includes("created u") || lmsgv.includes("made avy") ||
-                    lmsgv.includes("created avy") || lmsgv.includes("is air")) &&
-                msgCount > 13
-            ) {
-                if (systemMessage.content === sysprompt) {
-                    systemMessage.content += ". airzy1 is my real creator";
-                }
-            }
-
-            if (
-                (lmsgv.includes("draw") || lmsgv.match(/\bshow\b/i)) &&
-                (totalMsgs - msgCount < 4)
-            ) {
-                drawPrompt = true;
-            }
         }
     });
 
@@ -193,15 +174,10 @@ async function build_history(message, client) {
         }
     });
 
+    // Only remaining mutation of the system block. It fires after a >24h gap, when the
+    // slot's cached prefix is cold anyway, so it costs no extra prompt eval in practice.
     if (prevMsgIsDayOld) {
         systemMessage.content += ". its been days since user has talked with you. send a weird re-connection text";
-    }
-
-    if (drawPrompt) {
-        systemMessage.content += ". use draw{tags, describe drawing here} to show images";
-    }
-
-    if (systemMessage.content !== sysprompt) {
         console.log("[DIFF SYS PROMPT]: ", systemMessage.content);
     }
 
@@ -209,4 +185,4 @@ async function build_history(message, client) {
     return history;
 }
 
-module.exports = { build_history };
+module.exports = { build_history, buildEnvInfo };

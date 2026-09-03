@@ -1,3 +1,5 @@
 node_modules/
 *trafic.log
-.env
+*.env
+*.zip
+.airzy

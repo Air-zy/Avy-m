@@ -1,8 +1,46 @@
 const envDecrypt = require('../../envDecrypt.js');
 const AVYAI_AUTH = envDecrypt(process.env.avyKey, process.env.AVYAI_AUTH);
 const AVYAI_ENDPOINT = envDecrypt(process.env.avyKey, process.env.AVYAI_ENDPOINT);
+// The Space is private: HF's gateway needs an HF token, and it consumes this header
+// rather than forwarding it, leaving Authorization free for llama-server's own key.
+const AVYAI_HF_AUTH = envDecrypt(process.env.avyKey, process.env.AVYAI_HF_AUTH);
+
+const sysprompt = envDecrypt(process.env.avyKey, process.env.SYSTEM_PROMPT);
+
+// The model routes a tool call to the `to=<tool>` channel most of the time, but it
+// sometimes emits the block on `to=user` instead, where llama.cpp hands it back as
+// plain content. The template states this format "is parsed with regular expressions",
+// so we recover those rather than leak raw markup into Discord and lose the call.
+const ATEM_CALL = /<atem:function_calls>\s*<atem:invoke name="([^"]+)">([\s\S]*?)<\/atem:invoke>\s*<\/atem:function_calls>/g;
+const ATEM_PARAM = /<atem:parameter name="([^"]+)">([\s\S]*?)<\/atem:parameter>/g;
+
+function parseAtemCalls(text) {
+    const calls = [];
+    for (const m of text.matchAll(ATEM_CALL)) {
+        const args = {};
+        for (const p of m[2].matchAll(ATEM_PARAM)) args[p[1]] = p[2].trim();
+        calls.push({ id: `atem_${calls.length}`, type: "function",
+                     function: { name: m[1], arguments: JSON.stringify(args) } });
+    }
+    return calls;
+}
+
+// How much of `s` is safe to stream: everything before a complete "<atem:", and also
+// short of a trailing fragment of it, so half a marker never reaches a Discord message.
+const MARKER = "<atem:";
+function visibleLength(s) {
+    const full = s.indexOf(MARKER);
+    if (full !== -1) return full;
+    for (let n = Math.min(MARKER.length - 1, s.length); n > 0; n--) {
+        if (MARKER.startsWith(s.slice(s.length - n))) return s.length - n;
+    }
+    return s.length;
+}
 
 let isGenerating = false;
+
+// llama-server speaks OpenAI SSE: `data: {...}` lines, terminated by `data: [DONE]`.
+// delta.reasoning_content carries the model's hidden channel and is dropped on purpose.
 async function generate(inputData, { onDelta, onFinal, onError } = {}) {
     if (isGenerating) {
         throw new Error("A generation is already in progress.");
@@ -14,25 +52,30 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
         const res = await fetch(AVYAI_ENDPOINT, {
             method: "POST",
             headers: {
-                accept: "*/*",
+                accept: "text/event-stream",
                 "content-type": "application/json",
                 authorization: `Bearer ${AVYAI_AUTH}`,
+                "x-hf-authorization": `Bearer ${AVYAI_HF_AUTH}`,
             },
             body: JSON.stringify(inputData),
         });
 
         if (!res.ok || !res.body) {
-            throw new Error(`Request failed with status ${res.status}`);
+            throw Object.assign(
+                new Error(`Request failed with status ${res.status}: ${(await res.text()).slice(0, 200)}`),
+                { status: res.status }
+            );
         }
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
 
         let buffer = "";
-        let finalText = "";
-        let stillGenerating = true;
+        let raw = "";        // user-channel text, markup included
+        let emitted = 0;     // how much of it has been streamed out
+        const toolAcc = new Map();
 
-        while (stillGenerating) {
+        stream: while (true) {
             const { value, done } = await reader.read();
             if (done) break;
 
@@ -42,32 +85,49 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
             buffer = lines.pop();
 
             for (const line of lines) {
-                if (!line.trim()) continue;
+                const trimmed = line.trim();
+                // skips blank separators and `: keep-alive` comment frames
+                if (!trimmed.startsWith("data:")) continue;
 
-                try {
-                    const json = JSON.parse(line);
+                const payload = trimmed.slice(5).trim();
+                if (payload === "[DONE]") break stream;
 
-                    if (json.event === "delta") {
-                        finalText += json.text;
-                        onDelta?.(json.text, finalText);
-                    } else if (json.event === "final") {
-                        stillGenerating = false;
-                        break;
-                    }
-                } catch (e) {
-                    onError?.(e, line);
-                    stillGenerating = false;
-                    break;
+                const json = JSON.parse(payload);
+                if (json.error) {
+                    throw Object.assign(new Error(json.error.message || "stream error"), { status: json.error.code });
+                }
+
+                const delta = json.choices?.[0]?.delta;
+                if (!delta) continue;
+
+                for (const tc of delta.tool_calls || []) {
+                    const cur = toolAcc.get(tc.index)
+                        || { id: tc.id, type: "function", function: { name: "", arguments: "" } };
+                    if (tc.id) cur.id = tc.id;
+                    if (tc.function?.name) cur.function.name = tc.function.name;
+                    if (tc.function?.arguments) cur.function.arguments += tc.function.arguments;
+                    toolAcc.set(tc.index, cur);
+                }
+
+                if (!delta.content) continue;
+                raw += delta.content;
+
+                const safe = visibleLength(raw);
+                if (safe > emitted) {
+                    const chunk = raw.slice(emitted, safe);
+                    emitted = safe;
+                    onDelta?.(chunk, raw.slice(0, safe));
                 }
             }
         }
 
-        isGenerating = false;
-        console.log("avy:", finalText)
-        onFinal?.(finalText);
+        const finalText = raw.slice(0, visibleLength(raw)).trimEnd();
+        const toolCalls = toolAcc.size ? [...toolAcc.values()] : parseAtemCalls(raw);
+
+        console.log("avy:", finalText, toolCalls.length ? `+${toolCalls.length} tool call(s)` : "");
+        onFinal?.(finalText, toolCalls);
         return finalText;
     } catch (err) {
-        isGenerating = false;
         console.warn("[AVYAI ERR]", err);
         onError?.(err);
         throw err;
@@ -76,109 +136,83 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
     }
 }
 
-
-//
-
-const llama3TokenizerMODULE = require('llama3-tokenizer-js/bundle/commonjs-llama3-tokenizer-with-baked-data.cjs');
-const llama3Tokenizer = llama3TokenizerMODULE.llama3Tokenizer;
-
-function buildLogitBiasFromHistory(history, bias = -1, exclude = []) {
-    const window = 5;
-    const ngramSeen = new Map();
-    const msgSeen   = new Map();
-
-    const excluded = new Set(
-        exclude.flatMap(s => llama3Tokenizer.encode(s, { bos: false, eos: false }))
-    );
-
-    for (const msg of history) {
-        if (msg.role !== 'assistant') continue;
-
-        const ids = llama3Tokenizer.encode(msg.content, { bos: false, eos: false });
-
-        if (ids.length < window) {
-            const key = ids.join(',');
-            if (!msgSeen.has(key)) msgSeen.set(key, { ids, count: 0 });
-            msgSeen.get(key).count++;
-        } else {
-            const seenThisTurn = new Set();
-            for (let i = 0; i <= ids.length - window; i++) {
-                const ngram = ids.slice(i, i + window);
-                const key   = ngram.join(',');
-                if (seenThisTurn.has(key)) continue;
-                seenThisTurn.add(key);
-                if (!ngramSeen.has(key)) ngramSeen.set(key, { ids: ngram, count: 0 });
-                ngramSeen.get(key).count++;
+// Rendered into the system block, which is the stable cached prefix, so the ~460 tokens
+// of tool definitions cost one prompt-eval and then ride the cache (prompt_n 1 on warm).
+const TOOLS = [
+    {
+        type: "function",
+        function: {
+            name: "draw",
+            description: "draw image. comma separated tags.",
+            parameters: {
+                type: "object",
+                properties: { tags: { type: "string", description: "comma separated danbooru tags" } },
+                required: ["tags"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "self_info",
+            description: "creator?, and the current channel, server, user, and time.",
+            parameters: { type: "object", properties: {}, required: [] }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "run_code",
+            description: "run python3",
+            parameters: {
+                type: "object",
+                properties: { code: { type: "string", description: "python source" } },
+                required: ["code"]
             }
         }
     }
-
-    const logit_bias = {
-        "353": 1, // ( *)
-        "1501": -2, // ( show)
-        "75912": -10, // ( anon)
-        "8271": -4, // ( brain)
-        "39897": -4, // ( spill)
-        "15600": -4, // ( tea)
-        "47715": -2, // ( sip)
-        "39497": -4, // ( slut)
-        "4860": -4, // ( questions)
-        "3488": -2, // ( question)
-        "1131": 2, // (...)
-        "55375": 2, // ( ```)
-        "602": 1, // ( i)
-        "1448": 1, // ( fr)
-        "56939": 1, // ( rn)
-        "8136": 1, // ( af)
-        "813": 1, // ( his)
-    };
-
-    const punish = ({ ids, count }, label) => {
-        if (count < 2) return;
-        /*if (count > 2) {
-            const text = llama3Tokenizer.decode(ids);
-            console.log(`[logit_bias] punishing ${label} (x${count}): "${text}"`);
-        }*/
-        for (const id of ids) {
-            if (excluded.has(id)) continue;
-            logit_bias[id] = Math.max((logit_bias[id] ?? 0) + bias * count, -2);
-        }
-    };
-
-    for (const entry of msgSeen.values())   punish(entry, 'short msg');
-    for (const entry of ngramSeen.values()) punish(entry, 'ngram');
-
-    return logit_bias;
-}
+];
 
 function buildInputData(history) {
     return {
         messages: history,
-        max_tokens: 512,
-        temperature: 0.9,
-        top_p: 0.9,
-        top_k: 40,
+        tools: TOOLS,
+        stream: true,
+        max_tokens: 1024,
+        temperature: 1.0,
+        top_p: 0.95,
+        top_k: 64,
         min_p: 0.08,
-        presence_penalty: 4,
-        repeat_penalty: 1.2,
+        // DRY penalises repeated *sequences*, which is what the old hand-rolled n-gram
+        // logit_bias was badly approximating. Its default breakers include ':', so the
+        // `avy:` prefix survives. dry_penalty_last_n must be >= 0 on this build (b10752
+        // rejects -1), and its default of 64 is too short to reach into the history.
+        dry_multiplier: 0.8,
+        dry_penalty_last_n: 4096,
         seed: Math.floor(Math.random() * 65536),
-        logit_bias: buildLogitBiasFromHistory(history, -0.5, [
-            'avy:',
-            ' ||',
-            '```',
-            ' ```'
-        ])
+        // The template defaults reasoning_strength to 'high', which burns the whole
+        // max_tokens budget in the hidden channel and returns an empty reply.
+        chat_template_kwargs: { reasoning_strength: "low" }
     };
 }
 
+// A tool round trip is two generate() calls with tool execution in between, and image
+// generation in that gap takes seconds. isGenerating alone goes false there, which would
+// let the next Discord message start a second conversation straight into the same
+// channel, so respond_process holds this across the whole turn.
+let turnActive = false;
+const beginTurn = () => { turnActive = true; };
+const endTurn = () => { turnActive = false; };
+
 function isCurrentlyGenerating() {
-    return isGenerating;
+    return isGenerating || turnActive;
 }
 
-const sysprompt = "ur a discord girl named avy whos witty freak explicit self aware, repond as \"avy:\" dont repeat use few word";
 module.exports = {
     generate,
     buildInputData,
     sysprompt,
-    isCurrentlyGenerating
+    isCurrentlyGenerating,
+    beginTurn,
+    endTurn
 };
