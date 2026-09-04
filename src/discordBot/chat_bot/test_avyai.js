@@ -25,7 +25,7 @@ const text = (s) => d({ choices: [{ delta: { content: s } }] });
 let stub;
 global.fetch = async () => stub;
 
-const { generate, buildInputData, sysprompt } = require('./avyai.js');
+const { generate, prefill, buildInputData, sysprompt } = require('./avyai.js');
 
 (async () => {
     // happy path: reasoning + keep-alives + [DONE] are all filtered out
@@ -58,11 +58,11 @@ const { generate, buildInputData, sysprompt } = require('./avyai.js');
     assert.ok(!sysprompt.toLowerCase().includes("reasoning strength"));
     assert.strictEqual(buildInputData([]).stream, true);
 
-    // DRY replaced the hand-rolled n-gram penalty; this build rejects a negative window,
-    // and the 64-token default is too short to reach back into the chat history
+    // No repetition penalty of any kind now: DRY's window was either wide enough to
+    // penalise quoting the context back (names, urls, search snippets) or too short to
+    // stop anything. min_p plus the history dedupe carry it instead.
     const p = buildInputData([]);
-    assert.ok(p.dry_multiplier > 0);
-    assert.ok(p.dry_penalty_last_n >= 0 && p.dry_penalty_last_n > 64);
+    assert.ok(!("dry_multiplier" in p) && !("dry_penalty_last_n" in p));
     assert.ok(!("presence_penalty" in p) && !("repeat_penalty" in p));
 
     // structured tool_calls arrive fragmented: name+id on the first delta only,
@@ -88,7 +88,8 @@ const { generate, buildInputData, sysprompt } = require('./avyai.js');
     const out = await generate({}, { onDelta: (c) => seen.push(c), onFinal: (_t, tc) => (calls = tc) });
     assert.strictEqual(out, "avy: here ya go");
     assert.ok(!seen.join("").includes("<atem:"), "raw markup reached the channel");
-    assert.deepStrictEqual(calls, [{ id: "atem_0", type: "function",
+    assert.ok(/^atem_\d+$/.test(calls[0].id), "ids stay unique across turns, so do not pin one");
+    assert.deepStrictEqual(calls, [{ id: calls[0].id, type: "function",
         function: { name: "draw", arguments: '{"tags":"cat, fluffy"}' } }]);
 
     // a marker split across chunks must not be emitted as half a tag
@@ -96,6 +97,17 @@ const { generate, buildInputData, sysprompt } = require('./avyai.js');
     const seen2 = [];
     assert.strictEqual(await generate({}, { onDelta: (c) => seen2.push(c) }), "hi");
     assert.ok(!seen2.join("").includes("<ate"), "partial marker reached the channel");
+
+    // prefill re-submits the same prompt to warm the slot, generating nothing worth having
+    let sentBody = null;
+    global.fetch = async (_u, opts) => { sentBody = JSON.parse(opts.body); return { ok: true, text: async () => "{}" }; };
+    assert.strictEqual(await prefill(buildInputData([{ role: "user", content: "hi" }])), true);
+    assert.strictEqual(sentBody.stream, false);
+    assert.strictEqual(sentBody.max_tokens, 1);
+    assert.deepStrictEqual(sentBody.messages, [{ role: "user", content: "hi" }]);
+    // same tools and kwargs as a real turn, or it warms a prefix nothing will ask for
+    assert.strictEqual(sentBody.chat_template_kwargs.reasoning_strength, "low");
+    assert.strictEqual(sentBody.tools.length, buildInputData([]).tools.length);
 
     console.log("ok");
 })();

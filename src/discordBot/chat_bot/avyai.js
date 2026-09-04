@@ -7,6 +7,8 @@ const AVYAI_HF_AUTH = envDecrypt(process.env.avyKey, process.env.AVYAI_HF_AUTH);
 
 const sysprompt = envDecrypt(process.env.avyKey, process.env.SYSTEM_PROMPT);
 
+const { stripAvyPrefix } = require('./helpers.js');
+
 // The model routes a tool call to the `to=<tool>` channel most of the time, but it
 // sometimes emits the block on `to=user` instead, where llama.cpp hands it back as
 // plain content. The template states this format "is parsed with regular expressions",
@@ -14,12 +16,17 @@ const sysprompt = envDecrypt(process.env.avyKey, process.env.SYSTEM_PROMPT);
 const ATEM_CALL = /<atem:function_calls>\s*<atem:invoke name="([^"]+)">([\s\S]*?)<\/atem:invoke>\s*<\/atem:function_calls>/g;
 const ATEM_PARAM = /<atem:parameter name="([^"]+)">([\s\S]*?)<\/atem:parameter>/g;
 
+// Monotonic, not per-message: these ids end up in tool_memory and several remembered
+// turns share one history. Reusing `atem_0` for all of them renders fine here (the
+// template keys off the tool name) but is a malformed message array anywhere else.
+let atemCallSeq = 0;
+
 function parseAtemCalls(text) {
     const calls = [];
     for (const m of text.matchAll(ATEM_CALL)) {
         const args = {};
         for (const p of m[2].matchAll(ATEM_PARAM)) args[p[1]] = p[2].trim();
-        calls.push({ id: `atem_${calls.length}`, type: "function",
+        calls.push({ id: `atem_${atemCallSeq++}`, type: "function",
                      function: { name: m[1], arguments: JSON.stringify(args) } });
     }
     return calls;
@@ -40,13 +47,16 @@ function visibleLength(s) {
 let isGenerating = false;
 
 // llama-server speaks OpenAI SSE: `data: {...}` lines, terminated by `data: [DONE]`.
-// delta.reasoning_content carries the model's hidden channel and is dropped on purpose.
+// delta.reasoning_content carries the model's hidden channel. It never goes to Discord,
+// but it is handed to onFinal so a tool round can send it back: the template renders it
+// as `assistant to=self`, which is where the model expects to find its own thinking.
 async function generate(inputData, { onDelta, onFinal, onError } = {}) {
     if (isGenerating) {
         throw new Error("A generation is already in progress.");
     }
 
     isGenerating = true;
+    abortPrefill();   // a real turn must never queue behind a speculative one
 
     try {
         const res = await fetch(AVYAI_ENDPOINT, {
@@ -73,6 +83,7 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
         let buffer = "";
         let raw = "";        // user-channel text, markup included
         let emitted = 0;     // how much of it has been streamed out
+        let reasoning = "";  // the hidden channel, for the next round of the same turn
         const toolAcc = new Map();
 
         stream: while (true) {
@@ -109,6 +120,8 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
                     toolAcc.set(tc.index, cur);
                 }
 
+                if (delta.reasoning_content) reasoning += delta.reasoning_content;
+
                 if (!delta.content) continue;
                 raw += delta.content;
 
@@ -124,8 +137,8 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
         const finalText = raw.slice(0, visibleLength(raw)).trimEnd();
         const toolCalls = toolAcc.size ? [...toolAcc.values()] : parseAtemCalls(raw);
 
-        console.log("avy:", finalText, toolCalls.length ? `+${toolCalls.length} tool call(s)` : "");
-        onFinal?.(finalText, toolCalls);
+        console.log("avy:", stripAvyPrefix(finalText));
+        onFinal?.(finalText, toolCalls, reasoning);
         return finalText;
     } catch (err) {
         console.warn("[AVYAI ERR]", err);
@@ -136,59 +149,67 @@ async function generate(inputData, { onDelta, onFinal, onError } = {}) {
     }
 }
 
+// After a turn, re-submit the conversation so llama-server encodes it into its slot KV
+// cache while the user is still reading the reply. Next turn then only has to evaluate the
+// new message. Worth it because the prompt cannot be reused as generated: avy's own turn
+// comes back re-rendered from Discord (emoji stripped, messages merged, `avy:` gone) and
+// the tool block comes back truncated from tool_memory, so the tail diverges every time.
+//
+// Best-effort by design: it never holds isGenerating, so an incoming message is never
+// dropped for it, and generate() aborts it on the way in.
+let prefillAbort = null;
+
+function abortPrefill() {
+    prefillAbort?.abort();
+    prefillAbort = null;
+}
+
+async function prefill(inputData) {
+    if (isCurrentlyGenerating()) return false;
+
+    abortPrefill();
+    const controller = new AbortController();
+    prefillAbort = controller;
+
+    try {
+        const res = await fetch(AVYAI_ENDPOINT, {
+            method: "POST",
+            headers: {
+                "content-type": "application/json",
+                authorization: `Bearer ${AVYAI_AUTH}`,
+                "x-hf-authorization": `Bearer ${AVYAI_HF_AUTH}`,
+            },
+            // max_tokens 1 rather than 0: the prompt eval is the whole point and every
+            // build accepts 1, while 0 means "unlimited" on some of them.
+            body: JSON.stringify({ ...inputData, stream: false, max_tokens: 1 }),
+            signal: controller.signal
+        });
+
+        await res.text();   // drain, or the connection is held open
+        return res.ok;
+    } catch {
+        return false;       // aborted, or the server is away. Nothing to do either way.
+    } finally {
+        if (prefillAbort === controller) prefillAbort = null;
+    }
+}
+
 // Rendered into the system block, which is the stable cached prefix, so the ~460 tokens
 // of tool definitions cost one prompt-eval and then ride the cache (prompt_n 1 on warm).
-const TOOLS = [
-    {
-        type: "function",
-        function: {
-            name: "draw",
-            description: "draw image. comma separated tags.",
-            parameters: {
-                type: "object",
-                properties: { tags: { type: "string", description: "comma separated danbooru tags" } },
-                required: ["tags"]
-            }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "self_info",
-            description: "creator?, and the current channel, server, user, and time.",
-            parameters: { type: "object", properties: {}, required: [] }
-        }
-    },
-    {
-        type: "function",
-        function: {
-            name: "run_code",
-            description: "run python3",
-            parameters: {
-                type: "object",
-                properties: { code: { type: "string", description: "python source" } },
-                required: ["code"]
-            }
-        }
-    }
-];
+// tools/index -> self_info -> build_history -> avyai is a require cycle, so this reads
+// .TOOLS at call time; destructuring here captures undefined when avyai loads first.
+const toolRegistry = require('./tools');
 
 function buildInputData(history) {
     return {
         messages: history,
-        tools: TOOLS,
+        tools: toolRegistry.TOOLS,
         stream: true,
-        max_tokens: 1024,
+        max_tokens: 8192,
         temperature: 1.0,
         top_p: 0.95,
         top_k: 64,
         min_p: 0.08,
-        // DRY penalises repeated *sequences*, which is what the old hand-rolled n-gram
-        // logit_bias was badly approximating. Its default breakers include ':', so the
-        // `avy:` prefix survives. dry_penalty_last_n must be >= 0 on this build (b10752
-        // rejects -1), and its default of 64 is too short to reach into the history.
-        dry_multiplier: 0.8,
-        dry_penalty_last_n: 4096,
         seed: Math.floor(Math.random() * 65536),
         // The template defaults reasoning_strength to 'high', which burns the whole
         // max_tokens budget in the hidden channel and returns an empty reply.
@@ -210,6 +231,7 @@ function isCurrentlyGenerating() {
 
 module.exports = {
     generate,
+    prefill,
     buildInputData,
     sysprompt,
     isCurrentlyGenerating,

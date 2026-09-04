@@ -68,6 +68,30 @@ async function getMessages(channel) {
     return merged;
 }
 
+// The prompt is only worth caching if its oldest message stays put. Sliding the window by
+// one every turn moves every token behind it, so llama-server re-evaluates the whole
+// prompt on every message -- the 7122-token / 3070ms case in build_history's comment. So
+// the window is pinned to an anchor message and allowed to grow past KEEP, snapping back
+// only when it reaches KEEP + SLACK. The prefix is then append-only for SLACK messages at
+// a time, and pays for one full eval on the message that snaps it.
+const KEEP = 80;
+const SLACK = 20;
+
+async function getWindow(channel) {
+    const all = await getMessages(channel);
+    if (!all.length) return all;
+
+    const entry = cache.get(channel.id);
+    if (!entry) return all.slice(0, KEEP);
+
+    // newest-first, so the anchor's index is how many messages the window currently holds
+    let idx = entry.windowAnchor ? all.findIndex((m) => m.id === entry.windowAnchor) : -1;
+    if (idx === -1 || idx + 1 > KEEP + SLACK) idx = Math.min(KEEP, all.length) - 1;
+
+    entry.windowAnchor = all[idx].id;
+    return all.slice(0, idx + 1);
+}
+
 function invalidateChannel(channelId) {
     const entry = cache.get(channelId);
     if (entry) {
@@ -76,4 +100,4 @@ function invalidateChannel(channelId) {
     }
 }
 
-module.exports = { getMessages, invalidateChannel };
+module.exports = { getMessages, getWindow, invalidateChannel };

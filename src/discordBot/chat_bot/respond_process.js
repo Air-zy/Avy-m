@@ -1,19 +1,12 @@
-const fs = require('fs');
-const configData = JSON.parse(fs.readFileSync('src/discordBot/json_storage/configs.json'));
-const imgnamewatermark = configData[0].img_name_stamp;
-
-const animodule = require("../anigen.js");
 const { generate, buildInputData, beginTurn, endTurn } = require('./avyai.js');
-const { buildEnvInfo } = require('./build_history.js');
-const { runCode, formatResult } = require('./code_runner.js');
-const { filterDiscordName, filterSentText } = require('./helpers.js');
+const { runTool } = require('./tools');
+const { remember } = require('./tool_memory.js');
+const { filterDiscordName, stripAvyPrefix } = require('./helpers.js');
 
-// avy's appearance, so "draw me"/"draw avy" produces her rather than a random girl.
-const AVY_TAGS = "1girl, blonde hair, red eyes";
-
-// Enough for the model to recover when a tool errors -- it usually retries run_code with
-// http_get after urllib fails -- without letting it grind the channel.
-const MAX_TOOL_ROUNDS = 3;
+// Room for a real chain: search, read, run something on the result, retry a tool that
+// errored. The turn holds the channel for all of it, so this is also the worst-case time
+// avy ignores everyone else -- 10 rounds of generate + a 15s run_code is a few minutes.
+const MAX_TOOL_ROUNDS = 10;
 
 async function respond_process(message, history, client) {
     const mChannel = message.channel;
@@ -33,7 +26,7 @@ async function respond_process(message, history, client) {
     };
 
     const sendText = async (content) => {
-        const text = filterSentText(content || "")
+        const text = stripAvyPrefix(content)
             .replace(/\banon\b/gi, msgUserName)
             .trimEnd();
 
@@ -129,6 +122,8 @@ async function respond_process(message, history, client) {
     // already user-safe text and can go straight into the line buffer.
     const streamTurn = async (messages) => {
         let toolCalls = [];
+        let finalText = "";
+        let reasoning = "";
 
         await generate(buildInputData(messages), {
             onDelta: (chunk) => {
@@ -136,8 +131,10 @@ async function respond_process(message, history, client) {
                 enqueue(processPendingLines);
             },
 
-            onFinal: (_text, calls) => {
+            onFinal: (text, calls, thoughts) => {
+                finalText = text;
                 toolCalls = calls || [];
+                reasoning = thoughts || "";
             },
 
             onError: async (err) => {
@@ -153,56 +150,31 @@ async function respond_process(message, history, client) {
 
         await sendQueue;
         await finalizePending();
-        return toolCalls;
+        return { finalText, toolCalls, reasoning };
     };
 
-    const runDraw = async (tags) => {
-        const prompt = String(tags || "")
-            .replace(/_/g, " ")
-            .replace(/\bmyself\b/gi, AVY_TAGS)
-            .replace(/\bavy\b/gi, AVY_TAGS)
-            .replace(/\bme\b/gi, AVY_TAGS)
-            .trim();
-
-        if (!prompt) return "nothing drawn, no tags were given";
-
-        // anigen takes seconds. Awaiting it here would stall the follow-up turn behind
-        // it, so it runs alongside and is collected before respond_process returns. The
-        // model is told the image is on its way rather than that it landed, because at
-        // this point that is the only true statement.
-        artwork.push((async () => {
-            try {
-                const img = await animodule.generate(prompt, false);
-
-                if (typeof img !== "object") {
-                    await mChannel.send({ content: "[image failed]" });
-                    return;
-                }
-
-                await mChannel.send({
-                    files: [{
-                        attachment: img.msg,
-                        content_type: "image/png",
-                        name: prompt.substring(0, 64) + imgnamewatermark + ".png"
-                    }]
-                });
-                didSend = true;
-            } catch (err) {
-                console.error("[anigen failed]", err);
-                await mChannel.send({ content: "[image failed]" });
-            }
-        })());
-
-        return "the image is rendering and will appear in the channel in a moment";
+    // What a tool gets besides its args. send() goes through didSend so a turn that
+    // only posted an image is not followed by the "that broke" fallback; defer() hands
+    // back work the turn waits on before returning (anigen takes seconds).
+    const toolCtx = {
+        message,
+        send: async (payload) => { didSend = true; await mChannel.send(payload); },
+        defer: (p) => artwork.push(p)
     };
 
     beginTurn();
     try {
         const messages = [...history];
+        const alreadyCalled = new Map();   // tool+args seen this turn, see the loop below
+        const turnTrace = [];              // the same calls, kept for the turns after this
+        let finalReasoning = "";           // the thinking behind the reply she ended on
 
         for (let round = 0; ; round++) {
-            const toolCalls = await streamTurn(messages);
-            if (!toolCalls.length) break;
+            const { finalText, toolCalls, reasoning } = await streamTurn(messages);
+            if (!toolCalls.length) {
+                finalReasoning = reasoning;
+                break;
+            }
 
             // Out of rounds but it still wants a tool: stop here rather than let a
             // confused model loop on the channel.
@@ -211,7 +183,23 @@ async function respond_process(message, history, client) {
                 break;
             }
 
-            messages.push({ role: "assistant", content: "", tool_calls: toolCalls });
+            // Whatever she said before reaching for the tool goes in with the call, and so
+            // does the thinking behind it. Dropping either left the next round looking at
+            // an empty assistant turn with no idea why the tool was called -- she just
+            // called it again. Reasoning stays inside the turn: the next turn rebuilds
+            // history from Discord, which is where it should end.
+            messages.push({
+                role: "assistant",
+                content: stripAvyPrefix(finalText),
+                ...(reasoning ? { reasoning_content: reasoning } : {}),
+                tool_calls: toolCalls
+            });
+            turnTrace.push({
+                role: "assistant",
+                content: "",
+                ...(reasoning ? { reasoning_content: reasoning } : {}),
+                tool_calls: toolCalls
+            });
 
             for (const call of toolCalls) {
                 const name = call.function?.name;
@@ -222,20 +210,29 @@ async function respond_process(message, history, client) {
                     console.warn("[tool args unparseable]", name, call.function?.arguments);
                 }
 
-                let result;
-                if (name === "self_info") {
-                    result = JSON.stringify(buildEnvInfo(message));
-                } else if (name === "draw") {
-                    result = await runDraw(args.tags);
-                } else if (name === "run_code") {
-                    result = formatResult(await runCode(String(args.code || "")));
-                } else {
-                    result = `there is no tool called ${name}`;
-                }
+                // A model that learns nothing new from a tool will keep calling it with
+                // the same args until the round cap -- the transcript by then is
+                // call/result/call/result with no prose, which is a pattern it just
+                // continues. The result cannot differ, so hand back the one it already
+                // has with a nudge rather than burning a round re-running the tool.
+                const key = `${name}(${call.function?.arguments || "{}"})`;
+                const repeat = alreadyCalled.has(key);
+                const result = repeat
+                    ? `${alreadyCalled.get(key)}\n\n(you already called ${name} this turn. this is the same result. answer ${msgUserName} now.)`
+                    : await runTool(name, args, toolCtx);
 
-                messages.push({ role: "tool", tool_call_id: call.id, name, content: result });
+                if (!repeat) alreadyCalled.set(key, String(result));
+
+                console.log(`toolcall_${name}(${call.function?.arguments || "{}"}):`, String(result).slice(0, 500));
+                const toolMsg = { role: "tool", tool_call_id: call.id, name, content: result };
+                messages.push(toolMsg);
+                turnTrace.push(toolMsg);
             }
         }
+
+        // Anchored to the message that started the turn, so it lands back in the right
+        // place next time and ages out with it. See tool_memory.
+        remember(mChannel.id, message.id, turnTrace, finalReasoning);
 
         // A turn that only ever produced tool calls would leave the channel silent.
         // the model's reply lands first; the image follows when anigen is done

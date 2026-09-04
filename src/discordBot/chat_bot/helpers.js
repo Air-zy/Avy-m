@@ -82,31 +82,9 @@ function messageContentFilter(msg, client) {
     return msgcontent;
 }
 
-function filterSentText(text) {
-    // non-strings and empty strings pass through unchanged
-    if (typeof text !== "string" || text.length === 0) return text;
+// The system prompt ends "only respond as Avy:", so the model completes the pattern and
+// opens its reply with the same prefix. Stripping just that beats the old general
+// `label:` stripper, which also ate "note:", "edit:" and the like.
+const stripAvyPrefix = (s) => String(s || "").replace(/^\s*avy\s*:\s*/i, "");
 
-    // skip leading whitespace
-    let i = 0;
-    while (i < text.length && (text[i] === " " || text[i] === "\t")) i++;
-
-    // must have a colon
-    const colon = text.indexOf(":", i);
-    if (colon === -1) return text;
-
-    // find label end... ignoring trailing whitespace before the colon
-    let end = colon;
-    while (end > i && (text[end - 1] === " " || text[end - 1] === "\t")) end--;
-    const label = text.slice(i, end);
-
-    // empty or invalid label... letters, digits, _ ' - only
-    if (label.length === 0) return text;
-    if (!/^[\p{L}\p{M}\p{N}_'\-]+$/u.test(label)) return text;
-
-    // skip whitespace after colon and return the value
-    let j = colon + 1;
-    while (j < text.length && (text[j] === " " || text[j] === "\t")) j++;
-    return text.slice(j);
-}
-
-module.exports = { getAuthorName, filterDiscordName, messageContentFilter, filterSentText };
+module.exports = { getAuthorName, filterDiscordName, messageContentFilter, stripAvyPrefix };

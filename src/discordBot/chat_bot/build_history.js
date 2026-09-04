@@ -1,7 +1,8 @@
 const { sysprompt } = require('./avyai.js');
 const { imgUrlToText } = require('./imgURLToTxt.js');
 const { filterDiscordName, messageContentFilter } = require('./helpers.js');
-const { getMessages } = require('./message_cache.js');
+const { getWindow } = require('./message_cache.js');
+const { recall } = require('./tool_memory.js');
 
 const TWENTY_FOUR_HOURS_MS = 86400000;
 
@@ -55,8 +56,9 @@ async function build_history(message, client) {
     // the `self_info` tool when it actually needs it. See buildEnvInfo above.
     const history = [systemMessage];
 
-    let prevmessagesALL = await getMessages(msgChannel); // newest first, up to 100
-    let prevmessages = prevmessagesALL.slice(0, 80);
+    // newest first, and pinned to a stable oldest message so the prompt prefix survives
+    // from turn to turn. getWindow owns that; it hands back a copy, safe to reverse.
+    let prevmessages = await getWindow(msgChannel);
 
     let msgCount = 0;
     let totalMsgs = 0;
@@ -87,9 +89,19 @@ async function build_history(message, client) {
 
     prevmessages = prevmessages.reverse();
 
+    // Tool calls exist nowhere in Discord, so they come from tool_memory instead, keyed by
+    // the message that triggered them. Anything whose message has left the window is
+    // pruned here, which is the only place that knows what the window still holds.
+    const toolTrace = recall(msgChannel.id, new Set(prevmessages.map((m) => m.id)));
+
     let lastHistoryItem = null;
     let lastRole = null;
     let lastSpeaker = null;
+
+    // The thinking behind a reply cannot be its own message -- an assistant turn carrying
+    // reasoning and no content renders a stray empty `to=user` block -- so it waits here
+    // and is hung on the reply itself, which is the next assistant message to be built.
+    let pendingReasoning = null;
 
     const pushMergedHistory = (role, speaker, text) => {
         if (lastHistoryItem && lastRole === role && lastSpeaker === speaker) {
@@ -97,7 +109,18 @@ async function build_history(message, client) {
             return;
         }
 
-        lastHistoryItem = { role, content: `${speaker}: ${text}` };
+        if (speaker == "avy") {
+            lastHistoryItem = { role, content: `${text}` };
+        } else {
+            lastHistoryItem = { role, content: `${speaker}: ${text}` };
+        }
+
+        if (pendingReasoning) {
+            // dropped rather than carried further if her turn produced no message at all
+            if (role === "assistant") lastHistoryItem.reasoning_content = pendingReasoning;
+            pendingReasoning = null;
+        }
+
         history.push(lastHistoryItem);
         lastRole = role;
         lastSpeaker = speaker;
@@ -128,49 +151,17 @@ async function build_history(message, client) {
 
             pushMergedHistory("user", speakerName, msgv);
         }
-    });
 
-    let allCount = 0;
-    let countRemembered = 0;
-    let rememberNext = false;
-
-    prevmessagesALL = prevmessagesALL.reverse();
-    prevmessagesALL.forEach((msg) => {
-        allCount++;
-        if (allCount < 20 && countRemembered < 6) {
-            const lmsgc = msg.content.toLowerCase();
-
-            if (msg.author.id == client.user.id) {
-                if (
-                    rememberNext ||
-                    lmsgc.includes("remember") || lmsgc.includes("gotchu") ||
-                    lmsgc.includes("will do") || lmsgc.includes("yes") ||
-                    lmsgc.includes("never") || lmsgc.includes("u like") ||
-                    lmsgc.includes("alright")
-                ) {
-                    countRemembered++;
-                    rememberNext = !rememberNext;
-                    history.splice(1, 0, {
-                        role: 'assistant',
-                        content: "[old msg] " + messageContentFilter(msg, client).substring(0, 512).replace(/ {2,}/g, ' ')
-                    });
-                }
-            } else {
-                if (
-                    rememberNext ||
-                    lmsgc.includes("remember") || lmsgc.includes("avy will") ||
-                    lmsgc.includes("my name") || lmsgc.includes("my friend") ||
-                    lmsgc.includes("i like") || lmsgc.includes("avy please") ||
-                    lmsgc.includes("can you")
-                ) {
-                    countRemembered++;
-                    rememberNext = !rememberNext;
-                    history.splice(1, 0, {
-                        role: 'user',
-                        content: "[old msg] " + filterDiscordName(msg.author) + ": " + messageContentFilter(msg, client).substring(0, 512).replace(/ {2,}/g, ' ')
-                    });
-                }
-            }
+        // The turn this message set off: her call, then what the tool answered, sitting
+        // between the ask and the reply she wrote from it. Breaks the merge run on
+        // purpose -- the next message is no longer adjacent to the one before the block.
+        const trace = toolTrace?.get(msg.id);
+        if (trace) {
+            history.push(...trace.entries);
+            pendingReasoning = trace.finalReasoning || null;
+            lastHistoryItem = null;
+            lastRole = null;
+            lastSpeaker = null;
         }
     });
 
