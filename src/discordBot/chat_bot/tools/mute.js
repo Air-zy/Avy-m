@@ -1,5 +1,5 @@
 const { findMember } = require('../helpers.js');
-const { mute, MAX_MINUTES } = require('../mutes.js');
+const { mute } = require('../mutes.js');
 
 module.exports = {
     schema: {
@@ -8,7 +8,7 @@ module.exports = {
             type: "object",
             properties: {
                 username: { type: "string", description: "who to stop reading" },
-                minutes: { type: "number", description: `how long, up to ${MAX_MINUTES}` }
+                minutes: { type: "number", description: `how long` }
             },
             required: ["username", "minutes"]
         }
@@ -16,17 +16,19 @@ module.exports = {
 
     run: async ({ username, minutes }, ctx) => {
         const guild = ctx.message?.guild;
-        if (!guild) return "there is no server here, this is a dm";
 
         try {
-            const member = await findMember(guild, username);
-            if (!member) return `nobody here goes by ${username}`;
+            // In a dm there is exactly one person she could stop reading, and it is
+            // whoever is talking, so the name is not worth matching against anything.
+            const target = guild
+                ? (await findMember(guild, username))?.user
+                : ctx.message?.author;
 
-            // Muting herself would erase her own side of the history she reads next turn.
-            if (member.id === ctx.message.client?.user?.id) return "cannot stop reading myself";
+            if (!target) return `nobody here goes by ${username}`;
+            if (target.id === ctx.message.client?.user?.id) return "cannot stop reading myself";
 
-            const mins = mute(member.id, minutes);
-            return `not reading ${member.user.username} for ${mins} minutes`;
+            const mins = mute(target.id, minutes);
+            return `not reading ${target.username} for ${mins} minutes`;
         } catch (err) {
             return `could not do that: ${err.message}`;
         }

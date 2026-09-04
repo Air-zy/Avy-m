@@ -5,10 +5,10 @@ const MAX_STATUS = 128;
 
 module.exports = {
     schema: {
-        description: "set your own discord status text. empty text clears it.",
+        description: "set your own discord status text (everyone can see this). empty text clears it.",
         parameters: {
             type: "object",
-            properties: { text: { type: "string", description: "short status line" } },
+            properties: { text: { type: "string", description: "use a short but silly message" } },
             required: ["text"]
         }
     },
