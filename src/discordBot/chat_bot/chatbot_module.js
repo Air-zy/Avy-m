@@ -4,10 +4,12 @@ let Permissions;
 const { build_history } = require('./build_history.js');
 const { respond_process } = require('./respond_process.js');
 const { isCurrentlyGenerating, prefill, buildInputData } = require('./avyai.js');
+const { isMuted } = require('./mutes.js');
 
 async function handle_chat(message) {
     if (isCurrentlyGenerating()) return;
     if (message.author.bot) return;
+    if (isMuted(message.author.id)) return;   // she asked not to be read, see mutes.js
 
     if (message.channel.permissionsFor) {
         const botPermissions = message.channel.permissionsFor(client.user);

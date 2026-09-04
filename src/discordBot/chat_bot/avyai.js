@@ -205,7 +205,7 @@ function buildInputData(history) {
         messages: history,
         tools: toolRegistry.TOOLS,
         stream: true,
-        max_tokens: 8192,
+        max_tokens: 131072,   // the server's whole n_ctx; the prompt eats into it
         temperature: 1.0,
         top_p: 0.95,
         top_k: 64,

@@ -87,4 +87,20 @@ function messageContentFilter(msg, client) {
 // `label:` stripper, which also ate "note:", "edit:" and the like.
 const stripAvyPrefix = (s) => String(s || "").replace(/^\s*avy\s*:\s*/i, "");
 
-module.exports = { getAuthorName, filterDiscordName, messageContentFilter, stripAvyPrefix };
+// Finds someone by username, global name or nickname. Checks the cache first, then asks
+// the gateway, which works because this bot has the GuildMembers intent.
+async function findMember(guild, name) {
+    const q = String(name || "").trim().toLowerCase();
+    if (!guild || !q) return null;
+
+    const matches = (m) => [m.user?.username, m.user?.globalName, m.nickname]
+        .some((n) => n && n.toLowerCase().includes(q));
+
+    const cached = guild.members.cache.find(matches);
+    if (cached) return cached;
+
+    const found = await guild.members.fetch({ query: q, limit: 5 });
+    return found.find(matches) || found.first() || null;
+}
+
+module.exports = { getAuthorName, filterDiscordName, messageContentFilter, stripAvyPrefix, findMember };
