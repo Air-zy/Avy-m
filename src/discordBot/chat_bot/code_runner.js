@@ -4,63 +4,34 @@ const path = require('node:path');
 const CHILD = path.join(__dirname, 'sandbox_child.js');
 
 const TIMEOUT_MS = 15000;      // covers pyodide's ~2s cold start plus real work
-const MEM_KB = 512 * 1024;     // address space, not RSS: pyodide idles ~150MB
+const MAX_HEAP_MB = 128;       // v8's own heap in the child, not the wasm memory
 const MAX_OUTPUT = 1500;       // Discord messages are 2000
-const SPARE_DELAY_MS = 2000;   // idle gap before booting the next sandbox
 
 // Pyodide cannot be memory-capped from inside Node -- WASM memory is outside the V8 heap,
 // so worker resourceLimits do nothing and an RSS watchdog loses to a single synchronous
 // allocation (measured: bytearray(1.5GB) completed in one step, peaking at 1.5GB RSS).
-// An OS address-space limit is the only thing that actually stops it, hence a child
-// process under `ulimit -v`.
 //
-// ponytail: ulimit is Linux-only, so on a Windows dev box the child runs uncapped. The
-// deploy target is Linux; if that ever changes, this needs a job object or a container.
+// `ulimit -v` was the answer to that and it cannot work: V8 reserves a multi-GB virtual
+// cage before it executes a line, whatever the box's physical memory, so the child died
+// at startup with "Failed to reserve virtual memory for CodeRange" and no python ever
+// ran. Capping V8's heap is the part that works from in here.
+//
+// ponytail: that leaves no hard ceiling on the wasm side. cgroups is the only thing that
+// really caps a Node child -- `systemd-run --scope -p MemoryMax=200M` -- so wire that in
+// if the deploy box has systemd. Until then the timeout is the guard.
 function spawnSandbox() {
-    if (process.platform === 'linux') {
-        return spawn('sh', ['-c', `ulimit -v ${MEM_KB}; exec node ${JSON.stringify(CHILD)}`], { stdio: ['pipe', 'pipe', 'pipe'] });
-    }
-    return spawn(process.execPath, [CHILD], { stdio: ['pipe', 'pipe', 'pipe'] });
+    return spawn(process.execPath, [`--max-old-space-size=${MAX_HEAP_MB}`, CHILD], { stdio: ['pipe', 'pipe', 'pipe'] });
 }
 
-// Pyodide takes ~2s to boot, which is most of a short run. The child now starts loading
-// it before it reads stdin, so keeping one idle spare hides that entirely. The spare is
-// only created *after* a first run, so a bot that never runs code pays nothing for it.
-// Each run still gets its own interpreter, so nothing leaks between users.
-let spare = null;
-
+// There used to be a pre-warmed spare here holding a booted Pyodide, so a run skipped the
+// ~2s cold start. It also held ~150MB of RSS forever, which is a sixth of the deploy box.
+// Under a gig of RAM, two seconds is far cheaper than a permanently idle interpreter.
 function takeSandbox() {
-    const child = spare || spawnSandbox();
-    spare = null;
-    return child;
+    return spawnSandbox();
 }
 
-function warmSpare() {
-    if (spare) return;
-    try {
-        const child = spawnSandbox();
-        const drop = () => { if (spare === child) spare = null; };   // only clear itself
-        child.on('error', drop);
-        child.on('exit', drop);
-        child.unref();
-        // unref() covers the process handle but not its stdio pipes, and those alone keep
-        // the event loop alive -- a script would print its result and then hang forever.
-        for (const s of [child.stdin, child.stdout, child.stderr]) s?._handle?.unref?.();
-        child.stdout.resume();
-        child.stderr.resume();
-        spare = child;
-    } catch {
-        spare = null;
-    }
-}
-
-// For scripts and tests: a long-running bot never needs this, but anything that expects
-// to exit does, because the idle spare is a live child process.
-function shutdown() {
-    if (!spare) return;
-    try { spare.kill('SIGKILL'); } catch { /* already gone */ }
-    spare = null;
-}
+// Kept so callers need not care whether anything is being held onto. Nothing is.
+function shutdown() {}
 
 function runCode(source) {
     return new Promise((resolve) => {
@@ -76,11 +47,6 @@ function runCode(source) {
             clearTimeout(timer);
             try { child.kill('SIGKILL'); } catch { /* already gone */ }
             resolve(result);
-            // Deferred, not immediate: two Pyodide instances competing for CPU made a
-            // cold run 7.4s instead of ~2.5s, and back-to-back runs would have every
-            // spare boot landing on top of the next run. A idle gap is the point --
-            // in a real channel the next message is seconds away, so it is ready by then.
-            setTimeout(warmSpare, SPARE_DELAY_MS).unref();
         };
 
         const timer = setTimeout(
@@ -108,7 +74,7 @@ function runCode(source) {
 // What the model gets back. Kept short on purpose: this lands in a Discord message.
 function formatResult(r) {
     const parts = [];
-    if (r.output) parts.push(r.output.slice(0, MAX_OUTPUT));
+    if (r.output) parts.push(r.output);
     if (r.error) parts.push(`error: ${r.error}`);
     if (!parts.length) parts.push(r.ok ? 'ran fine, printed nothing' : 'no output');
     return parts.join('\n').slice(0, MAX_OUTPUT);

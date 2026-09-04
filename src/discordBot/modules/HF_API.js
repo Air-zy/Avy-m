@@ -7,8 +7,8 @@ const HFSpacesSecret = JSON.parse(
 
 const carousel = HFSpacesSecret.carousel;
 const drawClient = new GradioClient({
-  baseUrl: HFSpacesSecret.url1,
-  apiName: "generate",
+  baseUrl: "https://mrddickdickenson-krea-2-turbo-i2i.hf.space",
+  apiName: "_generate_wrapper",
   tokens: carousel,
 });
 

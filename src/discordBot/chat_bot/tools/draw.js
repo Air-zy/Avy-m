@@ -50,7 +50,7 @@ module.exports = {
                 });
             } catch (err) {
                 console.error("[anigen failed]", err);
-                await ctx.send({ content: "[image failed]" });
+                await ctx.send({ content: `[image failed: ${String(err.message).slice(0, 180)}]` });
             }
         })());
 

@@ -1,12 +1,10 @@
 class GradioClient {
     constructor({
         baseUrl,
-        apiPrefix = "/gradio_api",
         apiName = "generate",
         tokens = [],
     }) {
         this.baseUrl = baseUrl.replace(/\/$/, "");
-        this.apiPrefix = apiPrefix;
         this.apiName = apiName;
         this.tokens = tokens;
         this.tokenIndex = 0;
@@ -29,36 +27,55 @@ class GradioClient {
         return headers;
     }
 
-    async submit(data) {
-        const url = `${this.baseUrl}${this.apiPrefix}/call/${this.apiName}`;
-        const res = await fetch(url, {
-            method: "POST",
-            headers: this.buildHeaders(),
-            body: JSON.stringify({ data }),
-        });
+    // The /gradio_api/call/ convenience route reports every failure as a bare
+    // `event: error` with a null body -- the reason never leaves the server. The queue
+    // protocol underneath it carries the real message, so this speaks that instead.
+    // Costs one /config fetch, once, to turn the api_name into the fn_index it wants.
+    async resolveFn() {
+        if (this.fn) return this.fn;
 
-        if (!res.ok) {
-            throw new Error(
-                `POST ${res.status} ${res.statusText}\n${await res.text()}`
-            );
-        }
+        const res = await fetch(`${this.baseUrl}/config`, { headers: this.buildHeaders() });
+        if (!res.ok) throw new Error(`config ${res.status} ${res.statusText}`);
 
-        return res.json();
+        const dep = (await res.json()).dependencies.find((d) => d.api_name === this.apiName);
+        if (!dep) throw new Error(`space has no endpoint called ${this.apiName}`);
+
+        this.fn = { id: dep.id, triggerId: dep.targets?.[0]?.[0] };
+        return this.fn;
     }
 
-    async readStream(eventId) {
-        const url = `${this.baseUrl}${this.apiPrefix}/call/${this.apiName}/${eventId}`;
-        const res = await fetch(url, { headers: this.buildHeaders() });
+    async generate(data) {
+        const fn = await this.resolveFn();
+        const sessionHash = Math.random().toString(36).slice(2);
 
-        if (!res.ok) {
-            throw new Error(
-                `GET ${res.status} ${res.statusText}\n${await res.text()}`
-            );
+        const join = await fetch(`${this.baseUrl}/gradio_api/queue/join`, {
+            method: "POST",
+            headers: this.buildHeaders(),
+            body: JSON.stringify({
+                data,
+                event_data: null,
+                fn_index: fn.id,
+                trigger_id: fn.triggerId,
+                session_hash: sessionHash,
+            }),
+        });
+
+        if (!join.ok) {
+            throw new Error(`queue/join ${join.status} ${join.statusText}\n${await join.text()}`);
         }
 
-        if (!res.body) {
-            throw new Error("No response body returned by the server.");
-        }
+        const { event_id } = await join.json();
+        return this.readStream(sessionHash, event_id);
+    }
+
+    async readStream(sessionHash, eventId) {
+        const res = await fetch(
+            `${this.baseUrl}/gradio_api/queue/data?session_hash=${sessionHash}`,
+            { headers: this.buildHeaders() }
+        );
+
+        if (!res.ok) throw new Error(`queue/data ${res.status} ${res.statusText}`);
+        if (!res.body) throw new Error("No response body returned by the server.");
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -76,34 +93,28 @@ class GradioClient {
                 buf = buf.slice(idx + 2);
                 if (!block) continue;
 
-                let event = "";
-                let dataLine = "";
-
-                for (const line of block.split(/\r?\n/)) {
-                    if (line.startsWith("event:")) event = line.slice(6).trim();
-                    if (line.startsWith("data:")) dataLine = line.slice(5).trim();
-                }
-
-                if (!dataLine) continue;
-
-                let parsed = dataLine;
+                let msg;
                 try {
-                    parsed = JSON.parse(dataLine);
-                } catch { }
+                    msg = JSON.parse(block.replace(/^data:\s*/, ""));
+                } catch { continue; }
 
-                if (event === "complete") return parsed;
-                if (event === "error") {
-                    throw new Error(`Gradio error: ${JSON.stringify(parsed)}`);
+                // the stream carries the whole session, so skip other calls' events
+                if (msg.event_id && msg.event_id !== eventId) continue;
+
+                if (msg.msg === "process_completed") {
+                    reader.cancel().catch(() => { });
+                    if (msg.success) return msg.output.data;
+
+                    // title is the useful half: "ZeroGPU quota exceeded", and so on
+                    const reason = msg.output?.error || "the space gave no reason";
+                    throw new Error(msg.title ? `${msg.title} - ${reason}` : reason);
                 }
 
-                console.log(event || "message", parsed);
+                if (msg.msg === "close_stream") break;
             }
         }
-    }
 
-    async generate(inputJson) {
-        const { event_id } = await this.submit([inputJson]);
-        return this.readStream(event_id);
+        throw new Error("the space closed the stream without returning anything");
     }
 }
 

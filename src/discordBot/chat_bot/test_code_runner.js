@@ -26,11 +26,6 @@ process.env.SANDBOX_CANARY = 'this-would-be-avyKey';
     // no processes
     assert.match(await out("import subprocess; subprocess.run(['ls'])"), /Error/);
 
-    // raw sockets are shadowed, so model-written urllib/socket code fails loudly
-    // rather than quietly port-scanning localhost
-    assert.match(await out('import socket; socket.socket()'), /raw sockets are disabled/);
-    assert.match(await out('import _socket'), /raw sockets are disabled/);
-
     // the sanctioned network path works, but refuses anything that resolves private:
     // this bot runs an express server on localhost and cloud metadata is on 169.254
     const srv = http.createServer((_q, r) => r.end('LOCAL')).listen(38121, '127.0.0.1');

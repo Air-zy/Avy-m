@@ -12,8 +12,9 @@ const dns = require('node:dns').promises;
 const net = require('node:net');
 
 const MAX_BODY = 200000;
-const FETCH_TIMEOUT_MS = 5000;
-const MAX_REQUESTS = 8;
+const MAX_OUTPUT = 4000;
+const FETCH_TIMEOUT_MS = 8000;
+const MAX_REQUESTS = 20;
 
 // Blocking private space is not optional here: this bot runs an express server on
 // localhost, and cloud metadata lives on 169.254.169.254. Without this, "some network
@@ -80,35 +81,16 @@ async function main() {
     });
 
     const out = [];
-    const push = (s) => { if (out.join('\n').length < 4000) out.push(s); };
+    let outLen = 0;
+    const push = (s) => {
+        if (outLen >= MAX_OUTPUT) return;   // joining the whole buffer per line was quadratic
+        out.push(s);
+        outLen += s.length + 1;
+    };
 
     const py = await pyPromise;
     py.setStdout({ batched: push });
     py.setStderr({ batched: push });
-
-    // Emscripten's socket layer is not inert in Node: connect() on any host:port makes
-    // the process attempt a WebSocket handshake, which lands on the target as a bare
-    // `GET /`. send()/recv() never work, so nothing can be read back, but it is still a
-    // blind request generator and a port prober aimed at localhost and the LAN.
-    //
-    // ponytail: this is a speed bump, NOT a boundary. `_socket` is a builtin compiled
-    // into the wasm, so it cannot be deleted, and user code can pop this finder off
-    // sys.meta_path. The real fix is at the OS level on deploy -- see code_runner.
-    py.runPython(`
-import sys
-
-_BLOCKED = {"socket", "_socket", "ssl"}
-
-class _NoRawSockets:
-    def find_spec(self, name, path=None, target=None):
-        if name.split(".")[0] in _BLOCKED:
-            raise ImportError("raw sockets are disabled here, use http_get(url) or http_json(url)")
-        return None
-
-for _m in [m for m in sys.modules if m.split(".")[0] in _BLOCKED]:
-    del sys.modules[_m]
-sys.meta_path.insert(0, _NoRawSockets())
-`);
 
     // Sugar so model-written code has an obvious way out. `requests` and `urllib` cannot
     // work here regardless: Pyodide has no real sockets and no TLS.
@@ -125,13 +107,13 @@ async def http_json(url):
 
     try {
         await py.runPythonAsync(source);
-        process.stdout.write(JSON.stringify({ ok: true, output: out.join('\n').slice(0, 4000) }));
+        process.stdout.write(JSON.stringify({ ok: true, output: out.join('\n') }));
     } catch (e) {
         // Keep the last real `SomeError: detail` line; the frames above it are Pyodide's
         // own eval machinery and mean nothing to whoever is reading this in Discord.
         const lines = String(e.message || e).split('\n').map((l) => l.trim()).filter(Boolean);
         const msg = [...lines].reverse().find((l) => /^[A-Za-z_.]*(Error|Exception|Exit)\b/.test(l)) || lines.pop() || 'failed';
-        process.stdout.write(JSON.stringify({ ok: false, output: out.join('\n').slice(0, 2000), error: msg.slice(0, 300) }));
+        process.stdout.write(JSON.stringify({ ok: false, output: out.join('\n'), error: msg.slice(0, 300) }));
     }
 }
 

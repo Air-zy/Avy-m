@@ -14,30 +14,41 @@ const getRandomResolution = (options) => {
 };
 
 async function rawGen(body) {
-  //console.warn(body)
-  const resolution = getRandomResolution(resolutionOptions)
+  const resolution = body.resolution || getRandomResolution(resolutionOptions)
 
-  const prompt = body.input
-  const negativePrompt = "blurry, low quality, worst quality, bad score, low score, messy, bad anatomy, animated, duplicated, clones, low resolution, abstract, lowres, painting, text, technology, malformed, Chibi, masterpiece"
+  // Krea2 Turbo: 41 positional args, see /gradio_api/info. No negative prompt slot.
+  // An image turns this into an edit: the space ignores width/height and sizes the
+  // result from the source at target megapixels instead.
+  const data = [
+    body.image ? "edit" : "text2image",
+    body.input || "",
+    body.instruction || null,
+    body.image ? { path: body.image, meta: { _type: "gradio.FileData" } } : null,
+    null,                 // second reference image
+    resolution[0], resolution[1],
+    1.4,                  // target megapixels
+    768,                  // grounding resolution
+    1, 1,                 // reference strengths
+    body.steps || 4,      // turbo: 4-40
+    body.guidance || 1,   // turbo CFG: 1-5
+    "euler", "beta",
+    body.seed ?? Math.floor(Math.random() * 2 ** 31),
+    false,                // randomize seed
+    0,                    // GPU budget: automatic
+    "pornmasterKrea2_v2TurboInt8.safetensors", // Chill bro its not a porn generator this guy is just names it weird
+    null, null, null,     // custom base model repo/file/revision
+    { headers: ["repo_id", "filename", "revision", "weight"], data: [], metadata: null },
+    ...Array(18).fill(0), // catalog LoRA sliders, all off
+  ];
 
-  const input = {
-    "input": prompt,
-    "negative_input": negativePrompt,
-    "width": resolution[0],
-    "height": resolution[1],
-    "steps": body.steps || 28,
-    "guidance": body.guidance || 5,
-    "seed": body.seed,
-    "sampler": "Euler a"
-  }
+  console.log(body.image ? "editing:" : "drawing:", body.instruction || data[1], "seed", data[15])
+  const [gallery] = await HF_API.drawClient.generate(data);
+  const url = gallery?.[0]?.image?.url;
+  if (!url) throw new Error("rawGen: no image returned");
 
-  console.log("drawing:", input)
-  const json = JSON.stringify(input);
-  const result = await HF_API.drawClient.generate(json);
-  const resultData = result[0];
-  const imgb64 = resultData.image_base64;
-  const buffer = Buffer.from(imgb64, "base64");
-  return { msg: buffer };
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`rawGen: image fetch ${res.status}`);
+  return { msg: Buffer.from(await res.arrayBuffer()) };
 }
 
 async function generate(input, upscale = false, opts = {}) {
@@ -50,9 +61,9 @@ async function generate(input, upscale = false, opts = {}) {
 
   const resolution = getRandomResolution(resolutionOptions);
 
-  const steps = 28;
-  const guidance = 5;
-
+  const steps = 4;
+  const guidance = 1;
+  
   const seed = (typeof opts.seed === "number") ? opts.seed : Math.floor(Math.random() * 2 ** 31);
 
   const body = {
@@ -66,7 +77,20 @@ async function generate(input, upscale = false, opts = {}) {
   return await rawGen(body);
 }
 
+// Edit mode needs a publicly reachable url -- the space downloads it itself.
+async function editImg(imageUrl, instruction, opts = {}) {
+  if (!imageUrl) throw new Error("editImg: image url required");
+  if (!instruction || typeof instruction !== "string") throw new Error("editImg: instruction required");
+
+  return await rawGen({
+    image: imageUrl,
+    instruction: instruction,
+    seed: (typeof opts.seed === "number") ? opts.seed : Math.floor(Math.random() * 2 ** 31),
+  });
+}
+
 module.exports = {
   generate,
   rawGen,
+  editImg,
 };
