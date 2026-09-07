@@ -223,7 +223,7 @@ async function respond_process(message, history, client) {
 
                 if (!repeat) alreadyCalled.set(key, String(result));
 
-                console.log(`toolcall_${name}(${call.function?.arguments || "{}"}):`, String(result).slice(0, 500));
+                console.log(`toolcall_${name}(${call.function?.arguments || "{}"}):`, String(result).slice(0, 100));
                 const toolMsg = { role: "tool", tool_call_id: call.id, name, content: result };
                 messages.push(toolMsg);
                 turnTrace.push(toolMsg);

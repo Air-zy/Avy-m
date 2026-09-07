@@ -3,7 +3,7 @@ const { mute } = require('../mutes.js');
 
 module.exports = {
     schema: {
-        description: "mute someone for yourself",
+        description: "mute someone, use on people who spam",
         parameters: {
             type: "object",
             properties: {
