@@ -1,6 +1,6 @@
 module.exports = {
     schema: {
-        description: "react to what was just said with an emoji.",
+        description: "react to what was just said with an emoji. use this randomly for fun",
         parameters: {
             type: "object",
             properties: { emoji: { type: "string", description: "one emoji, or a server one as <:name:id>" } },

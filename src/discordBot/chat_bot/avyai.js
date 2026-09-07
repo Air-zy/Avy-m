@@ -206,14 +206,14 @@ function buildInputData(history) {
         tools: toolRegistry.TOOLS,
         stream: true,
         max_tokens: 131072,   // the server's whole n_ctx; the prompt eats into it
-        temperature: 1.0,
+        temperature: 1.05,
         top_p: 0.95,
         top_k: 64,
-        min_p: 0.08,
+        min_p: 0.05,
         seed: Math.floor(Math.random() * 65536),
         // The template defaults reasoning_strength to 'high', which burns the whole
         // max_tokens budget in the hidden channel and returns an empty reply.
-        chat_template_kwargs: { reasoning_strength: "low" }
+        chat_template_kwargs: { reasoning_strength: "medium" }
     };
 }
 

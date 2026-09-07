@@ -10,7 +10,7 @@ const AVY_TAGS = "1girl, blonde hair, red eyes";
 
 module.exports = {
     schema: {
-        description: "only to draw image. comma separated tags.",
+        description: "only to draw image. comma separated tags. dont suggest this tool",
         parameters: {
             type: "object",
             properties: { tags: { type: "string", description: "comma separated danbooru tags" } },
