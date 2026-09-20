@@ -56,6 +56,8 @@ const download = async (url) => {
       url.startsWith('https://www.youtube')
     ) {
       const data = await youtube(url)
+      // api answers 200 with no mp4 link on some videos; say so instead of returning undefined
+      if (!data.mp4) return [null, 'no mp4 link for: ' + url];
       return [data.mp4, null];
     } else {
       return [null, 'URL not supported: '+url];
