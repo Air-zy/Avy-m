@@ -1,47 +1,6 @@
-function msgChance() {
-    return Math.random() < 0.05;
-}
-
-function lowChance() {
-    return Math.random() < 0.02;
-}
-
-const avyPattern = /(?<!w)avy/; // "avy" is present but not preceded by "w"
-
-async function isTalkingToBot(client, msg) {
-  const msgtxt = msg.content.toLowerCase();
-  if (
-    msg.channel.type === 1 ||
-    msgtxt.includes(client.user.id) ||
-    msgChance() && msgtxt.includes("everyone") ||
-    msgChance() && msgtxt.includes("i hate") ||
-    msgChance() && msgtxt.includes("i love") ||
-    msgChance() && msgtxt.includes("is so stupid") ||
-    msgChance() && msgtxt.includes("i heard") ||
-    msgChance() && msgtxt.includes("damn") ||
-    msgChance() && msgtxt.includes("dang") ||
-    msgChance() && msgtxt.includes("im so") ||
-    msgChance() && msgtxt.includes("gyat") ||
-    //lowChance() && msgtxt.includes("the") ||
-    lowChance() && msgtxt.includes("this") ||
-    lowChance() && msgtxt.includes("that") ||
-    lowChance() && msgtxt.includes("should") ||
-    lowChance() && msgtxt.includes("fuck") ||
-    avyPattern.test(msgtxt) ||
-    msg.mentions.repliedUser == client.user
-  ) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
-
-//
 const fs = require('fs');
 
 const cmdprefix = JSON.parse(fs.readFileSync('src/discordBot/json_storage/configs.json'))[0].prefix;
-const chatbot_mod = require("./chat_bot/chatbot_module.js");
 const cmd_funcs = require("./msg_cmds.js");
 
 const userTimeouts = new Map();
@@ -55,7 +14,7 @@ module.exports = async (client, message) => {
   userTimeouts.set(message.author.id, true);
 
   if (message.channel.type === 1 && message.author.id != client.user.id){
-    console.log(`\n(${message.channel.id})(dm) ${message.author.username}: ${message.content}`); 
+    console.log(`\n(${message.channel.id})(dm) ${message.author.username}: ${message.content}`);
   }
 
   if (message.channel.id === "1404212337426042910" && !message.webhookId) { // whooks channel
@@ -76,19 +35,8 @@ module.exports = async (client, message) => {
         msg_channel.send("```js\n" + `${err.message}` + "```")
       }
     }
-    setTimeout(() => {
-      userTimeouts.delete(message.author.id);
-    }, delay);
-  } else {
-    const chk = await isTalkingToBot(client, message);
-    if (chk == true) {
-      if (message.channel.type != 1) { // not in DM
-        console.log(`\n(${message.channel.id})(${message.channel.name}) ${message.author.username}: ${message.content}`);
-      }
-      await chatbot_mod.handle_chat(message);
-    }
-    setTimeout(() => {
-      userTimeouts.delete(message.author.id);
-    }, delay);
   }
+  setTimeout(() => {
+    userTimeouts.delete(message.author.id);
+  }, delay);
 }

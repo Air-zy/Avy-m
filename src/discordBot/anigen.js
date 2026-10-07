@@ -17,13 +17,11 @@ async function rawGen(body) {
   const resolution = body.resolution || getRandomResolution(resolutionOptions)
 
   // Krea2 Turbo: 41 positional args, see /gradio_api/info. No negative prompt slot.
-  // An image turns this into an edit: the space ignores width/height and sizes the
-  // result from the source at target megapixels instead.
   const data = [
-    body.image ? "edit" : "text2image",
+    "text2image",
     body.input || "",
-    body.instruction || null,
-    body.image ? { path: body.image, meta: { _type: "gradio.FileData" } } : null,
+    null,                 // edit instruction
+    null,                 // reference image
     null,                 // second reference image
     resolution[0], resolution[1],
     1.4,                  // target megapixels
@@ -41,7 +39,7 @@ async function rawGen(body) {
     ...Array(18).fill(0), // catalog LoRA sliders, all off
   ];
 
-  console.log(body.image ? "editing:" : "drawing:", body.instruction || data[1], "seed", data[15])
+  console.log("drawing:", data[1], "seed", data[15])
   const [gallery] = await HF_API.drawClient.generate(data);
   const url = gallery?.[0]?.image?.url;
   if (!url) throw new Error("rawGen: no image returned");
@@ -77,20 +75,6 @@ async function generate(input, upscale = false, opts = {}) {
   return await rawGen(body);
 }
 
-// Edit mode needs a publicly reachable url -- the space downloads it itself.
-async function editImg(imageUrl, instruction, opts = {}) {
-  if (!imageUrl) throw new Error("editImg: image url required");
-  if (!instruction || typeof instruction !== "string") throw new Error("editImg: instruction required");
-
-  return await rawGen({
-    image: imageUrl,
-    instruction: instruction,
-    seed: (typeof opts.seed === "number") ? opts.seed : Math.floor(Math.random() * 2 ** 31),
-  });
-}
-
 module.exports = {
   generate,
-  rawGen,
-  editImg,
 };

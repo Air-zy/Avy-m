@@ -25,25 +25,4 @@ const isPng = (b) => Buffer.isBuffer(b) && b.length > 10000 && b.subarray(0, 4).
   const { msg } = await require("./anigen.js").generate("avy in a flower field", false, { seed: 777 });
   assert(isPng(msg), "draw: no png bytes");
   console.log("ok draw -", msg.length, "bytes");
-
-  // edit_img end to end: finds the url on the message, then edits it
-  const editTool = require("./chat_bot/tools/edit_img.js");
-  const deferred = [];
-  const sent = [];
-  const ctx = {
-    message: {
-      attachments: [{ contentType: "image/png", url: "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/diffusers/cat.png" }],
-      embeds: []
-    },
-    send: async (p) => sent.push(p),
-    defer: (p) => deferred.push(p)
-  };
-
-  assert((await editTool.run({ instruction: "" }, ctx)).includes("no instruction"), "edit: empty instruction not caught");
-  assert((await editTool.run({ instruction: "x" }, { message: { attachments: [], embeds: [] } })).includes("no recent image"), "edit: missing image not caught");
-
-  await editTool.run({ instruction: "give the cat a tiny red wizard hat" }, ctx);
-  await Promise.all(deferred);
-  assert(sent.length === 1 && isPng(sent[0].files?.[0]?.attachment), "edit: no png sent");
-  console.log("ok edit -", sent[0].files[0].attachment.length, "bytes");
 })().catch((e) => { console.error("FAIL:", e.message); process.exit(1); });

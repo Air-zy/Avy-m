@@ -12,8 +12,7 @@
     "dotenv": "^16.1.4",
     "express": "^5.0.1",
     "firebase-admin": "^13.7.0",
-    "node-fetch": "3.3.2",
-    "pyodide": "^314.0.6"
+    "node-fetch": "3.3.2"
   },
   "overrides": {
     "undici": "^6.24.0",

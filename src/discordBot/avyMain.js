@@ -119,9 +119,6 @@ client.on('guildCreate', async (guild) => {
 const onMsgCreate = require('./onMsgCreate.js')
 client.on("messageCreate", (message) => onMsgCreate(client, message));
 
-const chatbot_mod = require("./chat_bot/chatbot_module.js");
-chatbot_mod.pass_exports(client, PermissionsBitField);
-
 const cmd_funcs = require("./msg_cmds.js");
 cmd_funcs.pass_exports(client, discordjs, PermissionsBitField)
 

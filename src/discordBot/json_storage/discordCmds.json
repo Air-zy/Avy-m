@@ -6,20 +6,6 @@
     "contexts": [0, 1, 2]
   },
   {
-    "name": "ask",
-    "description": "will respond",
-    "integration_types": [0, 1],
-    "contexts": [0, 1, 2],
-    "options": [
-      {
-        "name": "question",
-        "description": "The question you want to ask",
-        "type": 3,
-        "required": true
-      }
-    ]
-  },
-  {
     "name": "draw",
     "description": "generate ai img",
     "integration_types": [0, 1],

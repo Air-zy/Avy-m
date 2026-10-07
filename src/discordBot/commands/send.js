@@ -28,7 +28,7 @@ module.exports = {
     if (foundChannel?.permissionsFor) {
       const botPermissions = foundChannel.permissionsFor(client.user);
       if (!botPermissions?.has(Permissions.Flags.SendMessages)) {
-        console.log('[Chatbot Err 2] cannot sent msg in channel ', foundChannel.name);
+        console.log('[send] cannot sent msg in channel ', foundChannel.name);
         return;
       }
     }
@@ -39,7 +39,7 @@ module.exports = {
       if (botPermissions?.has(Permissions.Flags.SendMessages)) {
         await mchannel.send(`sent to <@${recipientId}>`);
       } else {
-        console.log('[Chatbot Err 3] cannot sent msg in channel ', mchannel.name);
+        console.log('[send] cannot sent msg in channel ', mchannel.name);
       }
     }
   },
