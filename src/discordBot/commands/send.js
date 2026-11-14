@@ -1,7 +1,7 @@
 module.exports = {
   name: 'send',
   aliases: ['dm'],
-  adminOnly: false,
+  adminOnly: true,
 
   execute: async ({ message, client, Permissions }) => {
     const words = message.content.trim().split(/\s+/);

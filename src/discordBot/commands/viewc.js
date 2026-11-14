@@ -1,11 +1,11 @@
-const { resolveChannelById } = require('../utils/channel');
+const { resolveChannelById, isDeveloperOwnedChannel } = require('../utils/channel');
 
 module.exports = {
   name: 'viewc',
   aliases: ['view_channel'],
   adminOnly: true,
 
-  execute: async ({ message, client, discordjs, utils }) => {
+  execute: async ({ message, client, discordjs, utils, config }) => {
     const { reverseLines } = utils;
     const mchannel = message.channel;
     const words = message.content.trim().split(/\s+/);
@@ -19,6 +19,11 @@ module.exports = {
     const foundChannel = await resolveChannelById(client, channelId);
     if (!foundChannel) {
       await mchannel.send(`${channelId} not found`);
+      return;
+    }
+
+    if (!isDeveloperOwnedChannel(foundChannel, config.authorizedUsers)) {
+      await mchannel.send('viewc only works on channels in servers you own');
       return;
     }
 

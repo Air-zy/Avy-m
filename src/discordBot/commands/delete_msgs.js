@@ -1,11 +1,11 @@
-const { resolveChannelById } = require('../utils/channel');
+const { resolveChannelById, isDeveloperOwnedChannel } = require('../utils/channel');
 
 module.exports = {
   name: 'delete_msgs',
   aliases: [],
   adminOnly: true,
 
-  execute: async ({ message, client, discordjs }) => {
+  execute: async ({ message, client, discordjs, config }) => {
     const mchannel = message.channel;
     const words = message.content.trim().split(/\s+/);
 
@@ -21,6 +21,11 @@ module.exports = {
     const foundChannel = await resolveChannelById(client, channelId);
 
     if (!foundChannel) return;
+
+    if (!isDeveloperOwnedChannel(foundChannel, config.authorizedUsers)) {
+      await mchannel.send('delete_msgs only works on channels in servers you own');
+      return;
+    }
 
     const originalMsg = await mchannel.send({ content: 'starting delete_msgs' });
     const messages = await foundChannel.messages.fetch({ limit: amount });

@@ -19,4 +19,11 @@ async function resolveChannelById(client, rawId) {
   }
 }
 
-module.exports = { resolveChannelById };
+// True only for channels in servers owned by one of the bot's developers.
+// Keeps message-reading admin tools out of other people's servers and DMs.
+function isDeveloperOwnedChannel(channel, authorizedUsers) {
+  const ownerId = channel?.guild?.ownerId;
+  return Boolean(ownerId) && authorizedUsers.includes(String(ownerId));
+}
+
+module.exports = { resolveChannelById, isDeveloperOwnedChannel };

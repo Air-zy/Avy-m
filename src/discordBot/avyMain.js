@@ -10,13 +10,13 @@ const {
   Routes
 } = discordjs;
 const client = new Client({
+  // Privileged intents (GuildPresences, GuildMembers, MessageContent) were revoked by Discord.
+  // Requesting them makes the gateway refuse the login with "Used disallowed intents" (close code 4014).
+  // Only re-add them once the Developer Portal shows them enabled again.
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildPresences,
     GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
   ],
   partials: [
     Partials.Channel,
@@ -147,7 +147,8 @@ const { warn } = require('console');
 async function loginAvy() {
   console.log("[STARTED] avy login")
   startRowaTracker(client)
-  client.login(envDecrypt(process.env.avyKey, process.env.dToken));
+  client.login(envDecrypt(process.env.avyKey, process.env.dToken))
+    .catch(err => console.error('[DISCORD BOT] login failed:', err));
   initStatusTracker();
 }
 

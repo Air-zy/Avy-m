@@ -1,7 +1,7 @@
 module.exports = {
   name: 'replyc',
   aliases: [],
-  adminOnly: false,
+  adminOnly: true,
 
   execute: async ({ message, client }) => {
     const words = message.content.trim().split(/\s+/);

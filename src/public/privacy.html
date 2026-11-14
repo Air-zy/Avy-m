@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Avy Privacy Policy</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #1f2328;
+        --muted: #59636e;
+        --line: #d1d9e0;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16181d;
+          --text: #e6e8eb;
+          --muted: #9aa3ad;
+          --line: #2e333b;
+        }
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      }
+      main {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 40px 16px 64px;
+      }
+      h1 { font-size: 1.8rem; margin: 0 0 4px; }
+      h2 { font-size: 1.15rem; margin: 32px 0 8px; padding-top: 16px; border-top: 1px solid var(--line); }
+      .updated { color: var(--muted); margin: 0 0 24px; }
+      ul { padding-left: 20px; }
+      li { margin: 6px 0; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Avy Privacy Policy</h1>
+      <p class="updated">Last updated: November 13, 2026</p>
+
+      <p>
+        Avy is a Discord bot. This page explains what data Avy uses, why, and what happens to it.
+        By using Avy, you agree to this policy.
+      </p>
+
+      <h2>What Avy uses and why</h2>
+      <ul>
+        <li>
+          <strong>Slash commands.</strong> When you run a command, Avy uses what you type to do it.
+          The prompt you give <code>/draw</code> is sent to a third-party AI image service hosted on
+          Hugging Face, and Avy posts the image it returns. The link you give <code>/tomp4</code>
+          is used to download that video so Avy can upload it as an MP4.
+        </li>
+        <li>
+          <strong>Rowa chat bridge.</strong> In one designated channel in the Rowa Discord server,
+          Avy sends each message's author username and the first 128 characters of its text to the
+          Rowa Roblox game through Roblox's Open Cloud Messaging Service, so players in the game can
+          see it. Messages in any other channel are not used for this.
+        </li>
+        <li>
+          <strong>Text commands.</strong> Messages that start with Avy's command prefix are read
+          only so Avy can run that command.
+        </li>
+        <li>
+          <strong>Server information.</strong> When Avy is added to a server, the developers are
+          notified of that server's name and ID.
+        </li>
+        <li>
+          <strong>Developer status.</strong> Avy records whether its own developer is online, once
+          an hour, for a personal status history. No other user's online status is recorded.
+        </li>
+        <li>
+          <strong>Error logs.</strong> If something goes wrong, Avy writes a short log for
+          debugging. This log can include usernames, IDs, or command input involved in the error.
+        </li>
+      </ul>
+
+      <h2>What Avy stores</h2>
+      <ul>
+        <li>Avy does not store your messages or command input in a database.</li>
+        <li>The developer's hourly online status is stored in Google Firebase.</li>
+        <li>Error logs are kept in memory and in the hosting provider's logs, and only the developers can see them.</li>
+      </ul>
+
+      <h2>What Avy never does</h2>
+      <ul>
+        <li>It does not sell or rent your data.</li>
+        <li>It does not use your messages to train AI or machine learning models.</li>
+        <li>It does not share your data with anyone except the services listed above, and only so a feature can work.</li>
+      </ul>
+
+      <h2>Your choices</h2>
+      <ul>
+        <li>If you don't want your messages sent to the Rowa game, don't post in the bridge channel.</li>
+        <li>You can stop Avy from seeing a server by removing it from that server.</li>
+        <li>To ask a question or have data about you removed, contact the developer on Discord: <strong>airzy</strong>.</li>
+      </ul>
+
+      <h2>Changes</h2>
+      <p>If this policy changes, the date at the top of this page will change too.</p>
+    </main>
+  </body>
+</html>

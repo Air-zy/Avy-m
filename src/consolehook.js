@@ -23,12 +23,13 @@ process.stderr.write = (chunk, enc, cb) => {
 };
 
 // catch crashes
+// console.error goes through the stderr hook above, so these also land in logBuf
 process.on('uncaughtException', (err) => {
-  append(`[uncaughtException] ${err.stack || err}\n`);
+  console.error('[uncaughtException]', err);
 });
 
 process.on('unhandledRejection', (reason) => {
-  append(`[unhandledRejection] ${reason}\n`);
+  console.error('[unhandledRejection]', reason);
 });
 
 function getLogs() {

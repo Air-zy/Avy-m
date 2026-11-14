@@ -13,10 +13,6 @@ module.exports = async (client, message) => {
   }
   userTimeouts.set(message.author.id, true);
 
-  if (message.channel.type === 1 && message.author.id != client.user.id){
-    console.log(`\n(${message.channel.id})(dm) ${message.author.username}: ${message.content}`);
-  }
-
   if (message.channel.id === "1404212337426042910" && !message.webhookId) { // whooks channel
     const msgContent = message.content
     const userName = message.author.username
